@@ -1,0 +1,7 @@
+:PROPERTIES:
+:ID:       75779A73-3D8D-4A9E-9F2E-A71EDA97EAE6
+:END:
+#+title: Generative approaches to optimization
+
+
+[[./manuscript.org]]
