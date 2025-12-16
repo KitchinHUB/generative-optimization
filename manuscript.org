@@ -11,11 +11,11 @@ Solving optimization problems, especially for nonlinear and constrained systems,
 
 * Introduction
 
-The field of optimization is immense, with elegant solutions tailored to specific problem applications, depending on the nature of the objective function and constraints that are to be solved (e.g., linear /vs./ nonlinear, convex /vs./ Nonconvex, differentiable /vs./ nondifferentiable), the nature of the variables involved in the optimization problem (discrete, continuous, or both), and lastly, the nature of the solution itself, global /vs./ local optimization. This myriad of problems that arise in many fields of science and engineering gave birth to several solution techniques, ranging from the seminal work of linear programming and the Simplex method by Dantzig cite:&dantzig1990origins, to the advent of robust nonlinear programming techniques including sequential quadratic programming (SQP) cite:&Han1977;&powell_sqp_1978;&Wilson1963Simplicial, and the popularization of interior-point methods cite:&wachter2006implementation. Additionally, solutions of mixed integer nonlinear programming (MINLP) algorithms cite:&bonami2008 and recent innovations on generalized disjunctive programming (GDP) which embeds logical decisions into mathematical programming formulations cite:&grossmann_gdp, and global optimization cite:&FLOUDAS20051185;&Floudas2009;&BOUKOUVALA2016701 are all examples of how rich is the literature on the topic.In Python the ~scipy~ library is particularly notable [[cite:&virtanen-2020-scipy]], but others also exist like ~Pyomo~ [[cite:&bynum-2021-pyomo-optim]], GEKKO [[cite:&beal-2018-gekko-optim-suite]], Gurobi cite:&gurobi, Mosek cite:&Andersen2000, and JuMP cite:&dunning-2017-jump. These libraries include both algebraic optimization modeling languages as well as commercial and/or open-source optimization solvers. Despite all the work aforementioned, the list is by no means exhaustive, and many other interesting research directions are currently available and being actively developed.
+The field of optimization is immense, with elegant solutions tailored to specific problem applications, depending on the nature of the objective function and constraints that are to be solved (e.g., linear /vs./ nonlinear, convex /vs./ nonconvex, differentiable /vs./ nondifferentiable), the nature of the variables involved in the optimization problem (discrete, continuous, or both), and lastly, the nature of the solution itself, global /vs./ local optimization. This myriad of problems that arise in many fields of science and engineering gave birth to several solution techniques, ranging from the seminal work of linear programming and the Simplex method by Dantzig cite:&dantzig1990origins, to the advent of robust nonlinear programming techniques including sequential quadratic programming (SQP) cite:&Han1977;&powell_sqp_1978;&Wilson1963Simplicial, and the popularization of interior-point methods cite:&wachter2006implementation. Additionally, solutions of mixed integer nonlinear programming (MINLP) algorithms cite:&bonami2008 and recent innovations on generalized disjunctive programming (GDP) which embeds logical decisions into mathematical programming formulations cite:&grossmann_gdp, and global optimization cite:&FLOUDAS20051185;&Floudas2009;&BOUKOUVALA2016701 are all examples of how rich is the literature on the topic.In Python the ~scipy~ library is particularly notable [[cite:&virtanen-2020-scipy]], but others also exist like ~Pyomo~ [[cite:&bynum-2021-pyomo-optim]], GEKKO [[cite:&beal-2018-gekko-optim-suite]], Gurobi cite:&gurobi, Mosek cite:&Andersen2000, and JuMP cite:&dunning-2017-jump. These libraries include both algebraic optimization modeling languages as well as commercial and/or open-source optimization solvers. Despite all the work aforementioned, the list is by no means exhaustive, and many other interesting research directions are currently available and being actively developed.
 
 We see a particular interest in algorithmic development of solutions to optimization problems that are specific to the nature of the problem, its variables and local/optimal convergence criteria. However, less attention has been given to the use of emerging and powerful tools such as generative machine learning (genML) in the well-developed area of optimization. It is clear that optimization/mathematical programming is one of the cornerstones of machine learning (independent of the generative nature or lack thereof), but the reverse application, that is, genML as a tool to solve optimization problems, seems to be largely unexplored.
 
-To orient the reader on where a generative-based optimization approach fits in the optimization landscape, we illustrate genML-opt in Figure ref:fig:opt_flowchart, based on the classification of optimization problems by cite:&biegler2004_retrospective. We intentionally modified the original flowchart in Refs. citenum:&biegler2004_retrospective;&neos_optimization_types  to show which class of problems we are able to currently employ genML-opt. Although promising, there is still a lot to cover when compared to the current state-of-the-art in optimization.
+To orient the reader on where a generative-based optimization approach fits in the optimization landscape, we illustrate genML-opt in Figure ref:fig:opt_flowchart, based on the classification of optimization problems in Ref. citenum:&biegler2004_retrospective. We intentionally modified the original flowchart in Refs. citenum:&biegler2004_retrospective;&neos_optimization_types  to show which class of problems we are able to currently employ genML-opt. Although promising, there is still a lot to cover when compared to the current state-of-the-art in optimization.
 
 #+name: fig:opt_flowchart
 #+caption: Tree containing classes of optimization problems, based on flowcharts available in the literature cite:&biegler2004_retrospective;&neos_optimization_types. We show with connected dashed lines and also highlighting classes of optimization problems that we were able to currently solve using generative machine learning applied to optimization - GenML-opt.
@@ -43,7 +43,7 @@ We will focus on Gaussian Mixture Models (GMM) in this work, particularly an imp
 
 ** Gaussian mixture models
 
-Gaussian Mixture Models (GMMs) are a powerful and versatile mathematical tool that is able to characterize complex and multimodal distributions by combining multiple individual Gaussians. They are used in machine learning applications related but not limited to data clustering cite:&Yang_2019_ICCV;&viroli_deep_2019. They are also recognized in the literature related to pattern recognition in machine learning cite:&bishop2006pattern. Furthermore, in the field of robotics, the use of Gaussian Mixture Regression (GMR) (used in this work) as a generative modeling framework has been used cite:&Fabisch2021,  and it is considered a generative model cite:&deisenroth2020mathematicsML. We follow the notation from Ref citenum:&Fabisch2021 for the mathematical definition of GMMs. However, the reader should note that equally valid formulations are present in the literature cite:&deisenroth2020mathematicsML;&bishop2006pattern.
+Gaussian Mixture Models (GMMs) are a powerful and versatile mathematical tool that is able to characterize complex and multimodal distributions by combining multiple individual Gaussians. They are used in machine learning applications related but not limited to data clustering cite:&Yang_2019_ICCV;&viroli_deep_2019. They are also recognized in the literature related to pattern recognition in machine learning cite:&bishop2006pattern. Furthermore, in the field of robotics, Gaussian Mixture Regression (GMR) has been used as a generative modeling framework  cite:&Fabisch2021,  and it is considered a generative model cite:&deisenroth2020mathematicsML. We follow the notation from Ref citenum:&Fabisch2021 for the mathematical definition of GMMs. However, the reader should note that equally valid formulations are present in the literature cite:&deisenroth2020mathematicsML;&bishop2006pattern.
 
 From a machine learning perspective, the main task is, given a pair of vectors $x$ and $y$, to learn a probability distribution as defined as in Eq. ref:eq:GMM_01, which is the definition of a Gaussian mixture model.
 
@@ -56,7 +56,7 @@ p(\boldsymbol{x}, \boldsymbol{y})=\sum_{k=1}^K \pi_k \mathcal{N}_k\left(\boldsym
 
 *** Training
 
-The training step corresponds to obtain an accurate prediction of this unknown, probably multimodal and multivariable probability distribution, given a dataset defined by the pair of vectors $x,y$. For simplicity, we can lump the parameters related to the formulation of Eq. ref:eq:GMM_01 which includes the means, covariances and mixture weights as $\theta := \left\{\pi_k, \boldsymbol{\mu}_{\boldsymbol{x} \boldsymbol{y}_k}, \boldsymbol{\Sigma}_{\boldsymbol{x} \boldsymbol{y}_k}: k=1, \ldots, K\right\}$
+The training step corresponds to obtaining an accurate prediction of this unknown, probably multimodal and multivariable probability distribution, given a dataset defined by the pair of vectors $x,y$. For simplicity, we can lump the parameters related to the formulation of Eq. ref:eq:GMM_01 which includes the means, covariances and mixture weights as $\theta := \left\{\pi_k, \boldsymbol{\mu}_{\boldsymbol{x} \boldsymbol{y}_k}, \boldsymbol{\Sigma}_{\boldsymbol{x} \boldsymbol{y}_k}: k=1, \ldots, K\right\}$
 
 As a figure of merit is needed to fit this generative machine learning model, we resort to a likelihood formulation, defined as in Eq.ref:eq:logLL
 
@@ -129,7 +129,7 @@ Lastly, we note that typical optimization techniques are used, more specifically
 
 ** Utility functions
 
-We do have to do some hyperparameter tuning with a GMM, most notably choosing the number of components in the model. To avoid a lot duplicated code in this work, we develop this function to automate that choice for us based on an information criteria. This function uses Bayesian Information Criteria (BIC) to pick the best GMM for a given data set.
+We do have to do some hyperparameter tuning with a GMM, most notably choosing the number of components in the model. To avoid a lot of duplicated code in this work, we develop this function to automate that choice for us based on an information criteria. This function uses Bayesian Information Criteria (BIC) to pick the best GMM for a given data set.
 
 #+BEGIN_SRC jupyter-python
 from sklearn.mixture import GaussianMixture
@@ -233,9 +233,9 @@ mpl.rcParams['figure.dpi'] = 300  # Set DPI to 300
 
 
 * Results and discussion
-** Root finding
+** Root finding  label:sec-root-finding
 
-In root finding we seek to find the values of $x$ where $f(x)=0$. We demonstrate this first on a polynomial where there are two real and two imaginary roots. We start with our data. This data is sampled from a function, but it could also be observation data from an instrument, for example. Here we consider a polynomial $y = x^4 - 4x^2 + x+3$. This function has easily computable roots for comparison with the roots we subsequently obtain by a generative model.
+In root finding we seek to find the values of $x$ where $f(x)=0$. We demonstrate this first on a polynomial where there are two real and two imaginary roots. We start by creating data that represent samples of $x$ and the corresponding values of $y$. This data is sampled from a function, but it could also be observation data from an instrument, for example. Here we consider a polynomial $y = x^4 - 4x^2 + x + 3$. This function has easily computable roots for comparison with the roots we subsequently obtain by a generative model. We find those roots next with a conventional function ~numpy.roots~.
 
 #+BEGIN_SRC jupyter-python
 import numpy as np
@@ -243,23 +243,29 @@ import matplotlib.pyplot as plt
 
 x = np.linspace(-2.25, 2, 200)
 y = x**4 - 4*x**2 + x + 3
-
-plt.plot(x, y)
-plt.xlabel('x')
-plt.ylabel('y');
-
 np.roots([1, 0, -4, 1, 3])
 #+END_SRC
 
 #+RESULTS:
-:RESULTS:
 : array([ 1.36778435+0.23154129j,  1.36778435-0.23154129j,
 :        -1.92630322+0.j        , -0.80926547+0.j        ])
-[[file:./.ob-jupyter/acd85567eddbff19ab94bcf61cf53110157818ed.png]]
-:END:
+
+There are two real roots to this equation at $x\approx-1.93, -0.81$. We can see these roots here:
+
+#+BEGIN_SRC jupyter-python
+plt.plot(x, y, label='f(x)')
+plt.plot([-1.92630322, -0.80926547], [0, 0], 'ro', label='real roots')
+plt.axhline(0, color='k', ls='--')
+plt.xlabel('x')
+plt.legend()
+plt.ylabel('y');
+#+END_SRC
+
+#+RESULTS:
+[[file:./.ob-jupyter/a1e6c4878ad1f10a91ee8369cbd19698cb8af456.png]]
 
 
-First, we build a model. It is tricky to evaluate a GMM model. Here we plot predictions with the data for a visual comparison. One can use parity plots, R^{2}, MAE, RMSE, and others. We show some of these here. Close inspection of the red predicted line shows some fitting artifacts in the minima and maxima. These do not impact the current problem as they are not near the roots we seek. One could even eliminate that data points where $y$ is not close to zero here.
+To solve this with a generative approach, we first build a generative model.  It is tricky to evaluate the goodness of fit in a GMM model. Here we plot predictions with the data for a visual comparison. One can use parity plots, R^{2}, MAE, RMSE, and others. We show some of these here. Close inspection of the red predicted line shows some fitting artifacts in the minima and maxima. These do not impact the current problem as they are not near the roots we seek. One could even eliminate that data points where $y$ is not close to zero here.
 
 #+BEGIN_SRC jupyter-python
 data = np.array([x, y]).T
@@ -279,6 +285,7 @@ plt.plot(data[:, 0], data[:, 1], 'b.', label='true')
 plt.plot(data[:, 0], pred[:, 0], 'r-', label='predicted')
 plt.xlabel('x')
 plt.ylabel('y')
+plt.axhline(0, c='k', ls='--')
 plt.legend();
 #+END_SRC
 
@@ -286,36 +293,40 @@ plt.legend();
 :RESULTS:
 : R2 = 1.000
 : MAE = 0.02
-[[file:./.ob-jupyter/1a13e01a09173dfce352f221caff1d953b652a38.png]]
+[[file:./.ob-jupyter/1cde2744d7c3481b05b60eb4b69d116d398d0618.png]]
 :END:
 
-That model fit seems reasonable. Now, we just generate conditional samples for $y=0$. The sample generation is stochastic, so we generate a lot of them as the function evaluations are inexpensive from a computational standpoint, and do statistical analysis on the distribution.
-
+That model fit seems reasonable. Now, we just generate conditional samples for $y=0$. We can compute the conditional probability density for that condition. Here we can see the probability density is basically zero except for two places that are near the two real roots.
 
 #+BEGIN_SRC jupyter-python
 # the first argument is the indices to condition on
 # the second argument is the value to condition those variables.
 # Here x is in index 0, and y is in index 1; [x, y]
 c = gmm.condition([1], [[0.0]])
+# compute conditional probability that each x corresponds to a value of y=0.0
+_x = np.linspace(-2, 2, 1000)[:, None]
 
-results = c.sample(1000)  # generate 1000 samples
-
-plt.hist(results[:, 0]);
-plt.xlabel('root')
-plt.ylabel('frequency')
-cluster_stats(results)
+plt.plot(_x, c.to_probability_density(_x))
+plt.xlabel('x')
+plt.ylabel('Conditional probability density');
 #+END_SRC
 
 #+RESULTS:
-:RESULTS:
-:   0: -1.926 +\- 0.0016 (n=291)
-:   1: -0.809 +\- 0.0012 (n=705)
-:  -1:  1.369 +\- 0.0366 (n=4)
-[[file:./.ob-jupyter/a35c621a69679f97914f03e6069e1ce12a91d548.png]]
-:END:
+[[file:./.ob-jupyter/1de421721615e80b6be85d4ea150a1dcbae7b63f.png]]
 
 
-Two of the numerical results agree well the two known real roots. Similar to using ~scipy.optimize.root~, we cannot find the imaginary roots by sampling real values. We note that if the GMM is not sufficiently accurate, it is possible to find other roots; we are finding roots of a surrogate model that approximates the true joint probability distribution. There is one sample out of 1000 that is not a solution here, it is labeled -1.
+To see a more quantitative result, we have to sample the model many times, and evaluate statistics. Note that this model ends up producing two primary values that correspond to the roots. There is some uncertainty in these values because the model does not fit the data perfectly. That is a limitation of the GMM; there is no noise in our function evaluations.
+
+#+BEGIN_SRC jupyter-python
+cluster_stats(c.sample(1000))
+#+END_SRC
+
+#+RESULTS:
+:   0: -1.926 +\- 0.0018 (n=310)
+:   1: -0.809 +\- 0.0012 (n=689)
+:  -1:  1.377 +\- 0.0000 (n=1)
+
+Similar to using ~scipy.optimize.root~, we cannot find the imaginary roots by sampling real values, and we show how to resolve this in the next section. We note that if the GMM is not sufficiently accurate, it is possible to find other roots; we are finding roots of a surrogate model that approximates the true joint probability distribution. There are sometimes 1-2 samples out of 1000 that is not a solution here, it is labeled -1.
 
 It is also possible to condition on some other value, e.g. what are the $x$ values where $y=5$. In a conventional root finder one has to define a function equal to zero at that value, but here we simply condition on that value. If we generate enough samples, we get both values. In a conventional root finder, the root obtained depends on the initial guess, and there are bases of attraction around them. There is likely a similar concept here, but accessing this is hidden in the ~gmr~ library.
 
@@ -327,11 +338,11 @@ cluster_stats(results)
 #+END_SRC
 
 #+RESULTS:
-:   0: -2.206 +\- 0.0012 (n=422)
-:   1:  2.000 +\- 0.0011 (n=578)
+:   0: -2.206 +\- 0.0012 (n=425)
+:   1:  2.000 +\- 0.0011 (n=575)
 
 
-Finally, to reinforce that the GMM is a joint distribution model that can "go either way", here we use the GMM as a surrogate for the original function by generating samples conditioned on $x$.
+Finally, to reinforce that the GMM is a joint distribution model that can "go either way", here we use the GMM as a surrogate for the original function by generating samples conditioned on $x$. We use the values above to show that we recover the correct $x$ values.
 
 #+BEGIN_SRC jupyter-python
 # condition on x=2, and x=-2.206
@@ -344,7 +355,7 @@ c
 :        [5.00445111]])
 
 
-For this specific example there is a near analytical way to get the roots using ~np.roots~, and it would be trivial to find the roots with a nonlinear solver very efficiently. There are some advantages to this generative approach over a conventional nonlinear program solver. First, we do not need to make guesses and iterate. Instead, we simply sample until we think we have found enough solutions. This approach does not rely on derivatives in any form. It is also potentially useful that we get a distribution of samples. In this case, that comes from errors in the model, and not from intrinsic noise in the data, but it might help with uncertainty quantification, or in an active learning scenario. Finally, it is also interesting that the GMM can "go both ways", i.e. it is both a forward and backward model relating the inputs and outputs.
+For this specific example there is a near analytical way to get the roots using ~np.roots~ (this function relies on eigenvalues of a companion matrix), and it would be trivial to find the roots with a nonlinear solver very efficiently. There are some advantages to this generative approach over a conventional nonlinear program solver. First, we do not need to make guesses and iterate. Instead, we simply sample until we think we have found enough solutions. This approach does not rely on derivatives in any form. It is also potentially useful that we get a distribution of samples. In this case, that comes from errors in the model, and not from intrinsic noise in the data, but it might help with uncertainty quantification, or in an active learning scenario. Finally, it is also interesting that the GMM can "go both ways", i.e. it is both a forward and backward model relating the inputs and outputs.
 
 An obvious disadvantage, however, is we relied on a lot of function samples, far more than would be required with a nonlinear root finder in this case. It is unclear how little data might be required, or how to develop the most effective set of data points to build this model.
 
@@ -359,7 +370,7 @@ r
 #+END_SRC
 
 #+RESULTS:
-: array([ 1.00000000e+00+0.j, -6.94336629e-18+1.j, -6.94336629e-18-1.j])
+: array([ 1.00000000e+00+0.j, -4.23416596e-16+1.j, -4.23416596e-16-1.j])
 
 In an array form, those roots look like this. There is a column for the real part, and a column for the imaginary part.
 
@@ -395,7 +406,7 @@ data = np.hstack([inputs, outputs])[ind]
 #+END_SRC
 
 #+RESULTS:
-: 840
+: 795
 
 Now, we fit and condition on the desired output.
 
@@ -413,7 +424,603 @@ plt.ylabel('imag');
 
 #+RESULTS:
 :results:
-[[file:./.ob-jupyter/e828aa769cbf2b04b1d1740dda468a65adeb5b2a.png]]
+#+begin_example
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: divide by zero encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: overflow encountered in matmul
+  ret = a @ b
+/Users/jkitchin/.venv/lib/python3.12/site-packages/sklearn/utils/extmath.py:203: RuntimeWarning: invalid value encountered in matmul
+  ret = a @ b
+#+end_example
+[[file:./.ob-jupyter/2fea676f97a14b1998b8dfead262ef624cfebb4f.png]]
 :end:
 
 We can see there are only three pairs of samples, one at (1, 0), which is the real root, and two at (0, 1) and (0, -1) which represent the pair of imaginary results.
@@ -421,25 +1028,26 @@ We can see there are only three pairs of samples, one at (1, 0), which is the re
 
 ** Optimization with generative models
 
-In the previous example, we found roots by generating conditional samples where the function had a desired value. It is certainly possible to generate samples and then find the minimum and maximum values in the samples. There is a better way though if we recognize that we can generate derivative samples and then sample by conditioning on a derivative equal to zero.
+In the previous examples, we found roots by generating conditional samples where the function had a desired value. It is certainly possible to generate samples and then find the minimum and maximum values in the samples. There is a better way though if we recognize that we can generate derivative samples and then sample by conditioning on a derivative equal to zero.
 
-We continue with the previous example. First, we generate some samples. This example will have three places where the first derivative is equal to zero. For a more complex function, a library like jax or numdifftools could be used for the derivatives.
+We continue with the example from Section ref:sec-root-finding to find the stationary points in $y = x^4 - 4 x^2 + x + 3$. The derivative is analytically known: $y' = 4 x^3 - 8x + 1$. We show here there are three roots of the derivative of this function, and we generate samples of the derivative. For a more complex function, a library like ~jax~ or ~numdifftools~ could be used for the derivatives.
 
 #+BEGIN_SRC jupyter-python
 import numpy as np
 import matplotlib.pyplot as plt
 
-yp = 4*x**3 - 8*x + 1 # this is the derivative of the polynomial
+y_prime = 4*x**3 - 8*x + 1 # this is the derivative of the polynomial
 np.roots([4, 0, -8, 1])
 #+END_SRC
 
 #+RESULTS:
 : array([-1.4729976 ,  1.34699741,  0.12600019])
 
-To find these conditionally, we first build the GMM model for the joint distribution of $x$, $y$ and $yp$. It is not essential to include $y$, but you can find $(x, y)$ this way. Here we use a parity plot for a qualitative analysis of the quality of fit.
+
+To find these conditional generation, we first build the GMM model for the joint distribution of $x$, $y$ and $y\_prime$. It is not essential to include $y$, but one can find $(x, y)$ this way. Here we use a parity plot for a qualitative analysis of the quality of fit.
 
 #+BEGIN_SRC jupyter-python :results silent
-data = np.array([x, y, yp]).T
+data = np.array([x, y, y_prime]).T
 
 gmm = best_gmm_bic(data)
 #+END_SRC
@@ -447,10 +1055,10 @@ gmm = best_gmm_bic(data)
 After fitting, we can plot the data to see how well the model works.
 
 #+BEGIN_SRC jupyter-python :results drawer
-# condition on x and predict y, yp
+# condition on x and predict y, y_prime
 pred = gmm.predict([0], data[:, 0:1])
 plt.plot(data[:, 1], pred[:, 0], 'r.', label='y')
-plt.plot(data[:, 2], pred[:, 1], 'bo', mfc='none', alpha=0.2, label='yp')
+plt.plot(data[:, 2], pred[:, 1], 'bo', mfc='none', alpha=0.2, label="y'")
 plt.xlabel('True data')
 plt.ylabel('Generated data')
 plt.legend();
@@ -458,51 +1066,44 @@ plt.legend();
 
 #+RESULTS:
 :results:
-[[file:./.ob-jupyter/e8abd8f17b7e9b0264341eaad4947cf9d7cc02e2.png]]
+[[file:./.ob-jupyter/60e2c7ca46ffb726270f32659e4af3a97b79f9d1.png]]
 :end:
 
-Now we sample for $y' = 0$.
+Now we sample for $y' = 0$ and plot the histogram of results. These are pretty close to the analytical solutions. You need a more accurate model (e.g. from more data, and with more Gaussians) to do better.
 
 #+BEGIN_SRC jupyter-python
 c = gmm.condition([2], [[0.0]])
 
-results = c.sample(100)
-plt.hist(results[:, 0])
+results = c.sample(1000)
+plt.hist(results[:, 0], bins=100)
 plt.xlabel('root')
 plt.ylabel('frequency')
-cluster_stats(results)
+
+for r in np.roots([4, 0, -8, 1]):
+    plt.axvline(r, c='k', ls='--', label='known root')
+
+plt.legend(loc='best');
 #+END_SRC
 
 #+RESULTS:
-:RESULTS:
-:   0:  1.597 +\- 1.4737 (n=41)
-:   1: -1.989 +\- 0.5128 (n=21)
-:   2:  0.871 +\- 0.4738 (n=38)
-[[file:./.ob-jupyter/4597d16fcad52098b7fcecf39a2383c5d82c1bf5.png]]
-:END:
+[[file:./.ob-jupyter/0d51b75e032e997e88b5f6c8bc5bfcd4bab575db.png]]
 
 
-These are pretty close to the analytical solutions. You need a more accurate model to do better.
 
-#+BEGIN_SRC jupyter-python
-np.roots([4, 0, -8, 1])
-#+END_SRC
-
-#+RESULTS:
-: array([-1.4729976 ,  1.34699741,  0.12600019])
-
-Note that we find three places where the derivative is zero as expected. However, these correspond to two minima and one maxima. We can further constrain this with samples of the second derivative. We don't know in advance what the value of the Hessian will be, so we cannot directly condition on that. Let us be clever then, and use 1 if second derivative is positive, and 0 if it is negative. Then we condition on $y'=0$ and $y''=0$. This leads us to one solution, which corresponds to the maximum.
+Note that we find three places where the derivative is zero as expected. However, these correspond to two minima and one maxima. We can further constrain this with samples of the second derivative. We don't know in advance what the value of the Hessian will be, so we cannot directly condition on that. Let us be clever then, and use 1 if second derivative is positive, and -1 if it is negative. Then we condition on $y'=0$ and $y_{sign}''=-1$. This leads us to one solution, which corresponds to the maximum.
 
 
 #+BEGIN_SRC jupyter-python
-ypp = (12 * x**2 - 8) > 0
+y_double_prime = (12 * x**2 - 8) > 0
 
 # Add the integer label for y''
-data = np.array([x, y, yp, ypp.astype(int)]).T
+data = np.array([x, y,
+                 y_prime,
+                 np.where(y_double_prime>0, 1, -1).astype(int)]).T
 
 gmm = best_gmm_bic(data)
-# condition on y'=0.0, and y''=0
-c = gmm.condition([2, 3], [[0.0, 0]])
+# condition on y'=0.0, and y''=-1
+c = gmm.condition([2, 3], [[0, -1]])
 
 results = c.sample(100)
 plt.hist(results[:, 0])  # x
@@ -513,8 +1114,8 @@ cluster_stats(results[:, 0])
 
 #+RESULTS:
 :RESULTS:
-:  -1:  0.124 +\- 0.0066 (n=1)
-[[file:./.ob-jupyter/600b6c1d38ceb6550466d2b8263b974b95a34889.png]]
+:  -1:  0.129 +\- 0.0046 (n=1)
+[[file:./.ob-jupyter/ec37b6e0083a0289b02076144eaf0307ea132122.png]]
 :END:
 
 
@@ -531,10 +1132,9 @@ cluster_stats(results)
 
 #+RESULTS:
 :RESULTS:
-:   0:  0.883 +\- 0.4602 (n=72)
-:   1: -1.995 +\- 0.5174 (n=27)
-:  -1:  0.323 +\- 1.1497 (n=1)
-[[file:./.ob-jupyter/d8c1ab98b67acbdc9a18bd7855408ba86b382a16.png]]
+:   0: -2.034 +\- 0.5486 (n=23)
+:   1:  0.887 +\- 0.4541 (n=77)
+[[file:./.ob-jupyter/59404dc33565dc1b90dc0716699e98d9e2784435.png]]
 :END:
 
 ** Optimization with an equality constraint
@@ -634,7 +1234,8 @@ def L(Y):
     X, _lambda = Y[0:3], Y[3]
     return f(X) + _lambda * g(X)
 
-# Now we generate samples of x,y,z,lambda
+# Now we generate samples of x,y,z,lambda. Sobol sampling just fills space more
+# efficiently than uniform random samples.
 from scipy.stats.qmc import Sobol, scale
 sobol = Sobol(d=4, scramble=True)
 uY = sobol.random(n=128)  # unscaled
@@ -660,7 +1261,7 @@ Next, we build the GMM.
 gmm = best_gmm_bic(data)
 
 pred = gmm.predict([0, 1, 2], data[:, 0: 3]) # conditioned on x,y,z
-plt.plot(data[:, 3], pred[:, 0], 'r.', label=r'$\lambda$', alpha=0.2)
+
 plt.plot(data[:, 4], pred[:, 1], 'b.', label='dL/dx', alpha=0.2)
 plt.plot(data[:, 5], pred[:, 2], 'g.', label='dL/dy', alpha=0.2)
 plt.plot(data[:, 6], pred[:, 3], 'k.', label='dL/dz', alpha=0.2)
@@ -671,7 +1272,7 @@ plt.legend();
 #+END_SRC
 
 #+RESULTS:
-[[file:./.ob-jupyter/0bdfcdd5d10fb3a099aed797318e5f2541f1268e.png]]
+[[file:./.ob-jupyter/3b8377fff862e421afb3db0855dc960c44079adb.png]]
 
 
 This model is not great, with scatter about the parity line. It turns out that only a single Gaussian is used. Nevertheless, we can still condition on the Lagrange derivatives being zero to find the optimal solution. This yields the known answer to high accuracy.
@@ -683,7 +1284,7 @@ P[0][0:3]  # x, y, z
 #+END_SRC
 
 #+RESULTS:
-: array([ 0.99999794, -0.49999905,  0.49999874])
+: array([ 0.99999785, -0.49999902,  0.49999868])
 
 
 ** Constrained optimization with an inequality
@@ -759,7 +1360,7 @@ plt.legend();
 
 #+RESULTS:
 :results:
-[[file:./.ob-jupyter/efc6aa375baa0622d0e4f95c96cafed59ab25c25.png]]
+[[file:./.ob-jupyter/e7da3a26080c3ace7405e4a678a6662e112a2d92.png]]
 :end:
 
 We condition on the outputs (the derivatives of the objective function) being zero and generate inputs.
@@ -770,7 +1371,7 @@ P
 #+END_SRC
 
 #+RESULTS:
-: array([[1.99999978, 1.00000011]])
+: array([[2.0000003 , 1.00000021]])
 
 That is the answer we seek. We again emphasize we make no claims of superiority of the generative solution to the one from ~scipy.optimize.minimize~. Indeed, we had to reformulate the problem here, and use a sampling approach. Our primary interest in this problem was simply demonstrating the possibility.
 
@@ -800,6 +1401,7 @@ def ode(V, F, k1, k2):
     dFbdV = k1 * Fa / nu - k2 * Fb / nu
     return dFadV, dFbdV
 
+# Sobol sampling just fills space more efficiently than uniform random samples.
 from scipy.stats.qmc import Sobol, scale
 
 sobol = Sobol(d=2, scramble=True)
@@ -950,7 +1552,7 @@ We reiterate that the distribution here is due to the GMM surrogate model of the
 
 *** Caveats
 
-It is not reasonable to think that this approach would work for observations outside the data range. This is akin to extrapolation, and these models are not reliable for that. Here we show to kinds of extrapolation. the first shows an observation of negative concentration, which is an unphysical observation. In the second example, we specify a value of B outside the observed data range. Both cases lead to estimated parameters. In the first case, the parameters do not lead to the conditioned outputs. In the second case, an unphysically negative rate constant is predicted.
+It is not reasonable to think that this approach would work for observations outside the data range. This is akin to extrapolation, and these models are not reliable for that. Here we show two kinds of extrapolation. The first is an observation of negative concentration, which is an unphysical observation. In the second example, we specify a value of B outside the observed data range. Both cases lead to estimated parameters. In the first case, the parameters do not lead to the conditioned outputs. In the second case, an unphysically negative rate constant is predicted.
 
 #+BEGIN_SRC jupyter-python
 P = gmm.predict([2, 3], np.array([[0.02, -0.5],
@@ -992,7 +1594,7 @@ with np.printoptions(precision=4):
 
 ** Mapping input and output spaces  label:mapping
 
-We previously developed a mapping approach based on differential equations  [[cite:&alves-2023]]. We illustrate here that this can also be achieved by a generative model. We expand this idea to using a generative model here. The goal is to map a desired output space in the concentration of A, B from a CSTR to the input space of the radius of a CSTR, and the temperature (in units of $RT$) that achieves it. We have a design with fixed height, and we can modify the radius and temperature (via RT). There are two reactions A \rightarrow B that is second order in A, and A \rightarrow C that is first order in A. We seek a design space with desired amounts of A and B in the exit. We choose a circular region in the output space, and map it to the input space.
+We previously developed a mapping approach based on differential equations  [[cite:&alves-2023]]. We illustrate here that this can also be achieved by a generative model. We expand this idea to using a generative model here. The goal is to map a desired output space in the concentration of A, B from a CSTR to the input space of the radius of a CSTR, and the temperature (in units of $RT$) that achieves it. We have a design with fixed height, and we can modify the radius and temperature (via RT). There are two reactions: A \rightarrow B, that is second order in A, and A \rightarrow C, that is first order in A. We seek a design space with desired amounts of A and B in the exit. We choose a circular region in the output space, and map it to the input space.
 
 Given a radius, we have $V = \pi R^2 H$ and given an $RT$ we have these rate constants for the two forward reactions: $k_1 = \exp(-3 / RT)$, $k_2 = \exp(-10 / RT)$.
 
@@ -1086,6 +1688,8 @@ X2 = X2.flatten()
 
 pred = gmm.predict([2, 3], np.array([X1, X2]).T)
 
+# index variable to select points in a circle centered at (0.58, 0.3) with
+# radius 0.08
 ind = (X1 - 0.58)**2 + (X2 - 0.3)**2 <= 0.08**2
 
 P1, P2 = pred[ind].T
@@ -1113,7 +1717,7 @@ plt.axis('equal');
 
 This is not the same as learning a forward or backward model, e.g. a neural network or Gaussian process model. This is an approximate, data-driven mapping through a joint distribution model. It is not as smooth as the mapping by ODEs, or an analytical mapping, but it might be suitable for some applications. Building the model from more samples would improve the mapping accuracy. It is also possible to map in the forward direction, e.g. from a desired input space to an output space. This has application in uncertainty propagation.
 
-We think there is a connection between the mapping of input and output spaces by differential equations we previously developed [[cite:&alves-2023]] and modern diffusion and continuous flow mapping generative models. In our work we used a differentiable model to derive a set of ODEs that connect the inputs and outputs. In that work, we considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In diffusion and CFM models, one uses machine learning to learn a vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea.
+We think there is a connection between the mapping of input and output spaces by differential equations we previously developed [[cite:&alves-2023]] and modern diffusion and continuous flow mapping (CFM) generative models. We used a differentiable model to derive a set of ODEs that connect the inputs and outputs. We considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In diffusion and CFM models, one uses machine learning to learn the vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea we developed.
 
 * Conclusions
 
