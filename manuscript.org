@@ -1736,7 +1736,7 @@ Nevertheless, this work shows that generative methods have enormous possibility 
 JRK acknowledges Carl Laird for suggesting the barrier function approach for problems with inequality constraints.
 
 bibliographystyle:unsrtnat
-bibliography:/Users/jkitchin/Dropbox/emacs/bibliography/references.bib,alves.bib
+bibliography:manuscript.bib
 
 
 

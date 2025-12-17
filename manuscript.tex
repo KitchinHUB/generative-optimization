@@ -1,4 +1,4 @@
-% Created 2025-12-16 Tue 17:21
+% Created 2025-12-16 Tue 19:31
 % Intended LaTeX compiler: pdflatex
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
@@ -50,7 +50,7 @@ citecolor=blue,filecolor=blue,menucolor=blue,urlcolor=blue]{hyperref}
 Solving optimization problems, especially for nonlinear and constrained systems, is a challenge. Decades of specialized algorithms have been developed for general and special cases of root finding, minimization (including constraints), for parameter estimation, and mapping connected spaces. These approaches typically require a model, or set of equations, and then analytical, or iterative numerical approaches can be used to find a solution, and in some special cases a globally best solution can be found and proven. In this work we present an alternative approach to solving these problems that is based in generative machine learning models. The idea is these models either estimate a joint probability distribution of input and output variables, or are able to transform a distribution of inputs to a distribution of outputs (or vice versa). Then, by suitable conditioning (specifying desired properties of some variables), the solutions to these problems can be obtained by sampling the distribution, or by transformation of a distribution sample to the solution space. We illustrate the approach with Gaussian mixture models, which approximate the joint probability distribution. We show examples in root finding, unconstrained and constrained optimization, parameter estimation and mapping input and output spaces. This work is intended to be pedagogical to show how a generative model can be used to solve problems in optimization. We discuss some limitations of this approach, but conclude the approach has promise and is different than existing approaches.
 \end{abstract}
 \section{Introduction}
-\label{sec:orgc0ced6c}
+\label{sec:org1a15650}
 
 The field of optimization is immense, with elegant solutions tailored to specific problem applications, depending on the nature of the objective function and constraints that are to be solved (e.g., linear \emph{vs.} nonlinear, convex \emph{vs.} nonconvex, differentiable \emph{vs.} nondifferentiable), the nature of the variables involved in the optimization problem (discrete, continuous, or both), and lastly, the nature of the solution itself, global \emph{vs.} local optimization. This myriad of problems that arise in many fields of science and engineering gave birth to several solution techniques, ranging from the seminal work of linear programming and the Simplex method by Dantzig \cite{dantzig1990origins}, to the advent of robust nonlinear programming techniques including sequential quadratic programming (SQP) \cite{Han1977,powell_sqp_1978,Wilson1963Simplicial}, and the popularization of interior-point methods \cite{wachter2006implementation}. Additionally, solutions of mixed integer nonlinear programming (MINLP) algorithms \cite{bonami2008} and recent innovations on generalized disjunctive programming (GDP) which embeds logical decisions into mathematical programming formulations \cite{grossmann_gdp}, and global optimization \cite{FLOUDAS20051185,Floudas2009,BOUKOUVALA2016701} are all examples of how rich is the literature on the topic.In Python the \texttt{scipy} library is particularly notable \cite{virtanen-2020-scipy}, but others also exist like \texttt{Pyomo} \cite{bynum-2021-pyomo-optim}, GEKKO \cite{beal-2018-gekko-optim-suite}, Gurobi \cite{gurobi}, Mosek \cite{Andersen2000}, and JuMP \cite{dunning-2017-jump}. These libraries include both algebraic optimization modeling languages as well as commercial and/or open-source optimization solvers. Despite all the work aforementioned, the list is by no means exhaustive, and many other interesting research directions are currently available and being actively developed.
 
@@ -80,11 +80,11 @@ We think this approach is fundamentally different than a conventional view point
 
 GenML has the potential to serve as an alternative optimization solution approach to several classes of problems listed above, including linear and nonlinear programming (both constrained and unconstrained), parameter estimation problems, inverse mapping, and root finding, to name a few. Intriguingly, we have observed that the solution approach to these types of problems is remarkably consistent, as opposed to highly-tailored and specific algorithms (the current \emph{status quo}) as long as data is available. We do not anticipate that generative machine learning formulations will replace classic mathematical programming development. Instead, we believe that a branch of optimization problems that can be solved by using GenML will employ even more sophisticated optimization algorithms at the training and inference of generative models. In short, the optimization layer will always be present, and its interaction with the researcher/practitioner will be what might change within the next years.
 \section{Methods}
-\label{sec:orgce0f6b9}
+\label{sec:orgb943650}
 
 We will focus on Gaussian Mixture Models (GMM) in this work, particularly an implementation in \texttt{gmr} \cite{fabisch-2021-gmr}. There are other generative models based on diffusion and continuous flow matching \cite{jolicoeur-martineau-2023-gener-imput} that also work, but for the purpose of this paper, they function practically the same. Analogous to the "no free lunch" theorem, there is no one-size-fits all generative model; but, with enough data and training, they all perform the same on average \cite{wolpert-1997-no-free}. This is analogous to it not mattering whether one chooses a neural network or Gaussian process model; with enough data they are are both useful, and the choice is often made out of convenience or preference.
 \subsection{Gaussian mixture models}
-\label{sec:orgf4c941a}
+\label{sec:org0e2d953}
 
 Gaussian Mixture Models (GMMs) are a powerful and versatile mathematical tool that is able to characterize complex and multimodal distributions by combining multiple individual Gaussians. They are used in machine learning applications related but not limited to data clustering \cite{Yang_2019_ICCV,viroli_deep_2019}. They are also recognized in the literature related to pattern recognition in machine learning \cite{bishop2006pattern}. Furthermore, in the field of robotics, Gaussian Mixture Regression (GMR) has been used as a generative modeling framework  \cite{Fabisch2021},  and it is considered a generative model \cite{deisenroth2020mathematicsML}. We follow the notation from Ref \citenum{Fabisch2021} for the mathematical definition of GMMs. However, the reader should note that equally valid formulations are present in the literature \cite{deisenroth2020mathematicsML,bishop2006pattern}.
 
@@ -97,7 +97,7 @@ p(\boldsymbol{x}, \boldsymbol{y})=\sum_{k=1}^K \pi_k \mathcal{N}_k\left(\boldsym
 
 \noindent In which \(\mathcal{N}_k\left(\boldsymbol{x}, \boldsymbol{y} \mid \boldsymbol{\mu}_{\boldsymbol{x} \boldsymbol{y}_k}, \boldsymbol{\Sigma}_{\boldsymbol{x} \boldsymbol{y}_k}\right)\) are the \(k^{th}\) Gaussian distributions in a mixture, which are defined by their respective means \(\boldsymbol{\mu}_{\boldsymbol{x} \boldsymbol{y}_k}\) and covariances \(\boldsymbol{\Sigma}_{\boldsymbol{x} \boldsymbol{y}_k}\). \(\pi_k \in [0,1]\) are defined as \textit{weights} or \textit{priors}, which quantify the contribution of each Gaussian to the mixture model.
 \subsubsection{Training}
-\label{sec:org740708f}
+\label{sec:org8d8d17d}
 
 The training step corresponds to obtaining an accurate prediction of this unknown, probably multimodal and multivariable probability distribution, given a dataset defined by the pair of vectors \(x,y\). For simplicity, we can lump the parameters related to the formulation of Eq. \ref{eq:GMM_01} which includes the means, covariances and mixture weights as \(\theta := \left\{\pi_k, \boldsymbol{\mu}_{\boldsymbol{x} \boldsymbol{y}_k}, \boldsymbol{\Sigma}_{\boldsymbol{x} \boldsymbol{y}_k}: k=1, \ldots, K\right\}\)
 
@@ -113,7 +113,7 @@ The log-likelihood \cite{deisenroth2020mathematicsML} is formulated in Eq.\ref{e
 \log p(\boldsymbol{x,y} \mid \boldsymbol{\theta})=\sum_{n=1}^N \log p\left(\boldsymbol{x}_n \mid \boldsymbol{\theta}\right)=\underbrace{\sum_{n=1}^N \log \sum_{k=1}^K \pi_k \mathcal{N}\left(\boldsymbol{x}_n \mid \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k\right)}_{=: \mathcal{L}}
 \end{equation}
 \subsubsection{Prediction}
-\label{sec:orgd72777e}
+\label{sec:orgfc000df}
 
 Following the conditional distribution property of each individual Gaussian, one is able to compute the conditional distribution \(p(y \mid x,\theta)\) by first writing down the conditional distribution for a given \(k^{th}\) element \cite{Fabisch2021}.
 
@@ -170,7 +170,7 @@ Eq. \ref{eq:GMM_predict_compact} plays a major role in our work. As we draw samp
 
 Lastly, we note that typical optimization techniques are used, more specifically during the training step of the generative approach, namely the EM algorithm \cite{nips1993_EM}. However, this optimization step that requires \(\mathcal{O}(\mathcal{D}^3)\) for a dataset of dimensionality \(\mathcal{D}\), is performed offline and separately from the applications in which the GM model is employed.
 \subsection{Utility functions}
-\label{sec:org464587a}
+\label{sec:org7e62e6a}
 
 We do have to do some hyperparameter tuning with a GMM, most notably choosing the number of components in the model. To avoid a lot of duplicated code in this work, we develop this function to automate that choice for us based on an information criteria. This function uses Bayesian Information Criteria (BIC) to pick the best GMM for a given data set.
 
@@ -268,9 +268,9 @@ mpl.rcParams['axes.facecolor'] = 'none'
 mpl.rcParams['figure.dpi'] = 300  # Set DPI to 300
 \end{minted}
 \section{Results and discussion}
-\label{sec:orgc94ec0a}
+\label{sec:org907e99c}
 \subsection{Root finding  \label{sec-root-finding}}
-\label{sec:org643a337}
+\label{sec:org5e7d0a2}
 
 In root finding we seek to find the values of \(x\) where \(f(x)=0\). We demonstrate this first on a polynomial where there are two real and two imaginary roots. We start by creating data that represent samples of \(x\) and the corresponding values of \(y\). This data is sampled from a function, but it could also be observation data from an instrument, for example. Here we consider a polynomial \(y = x^4 - 4x^2 + x + 3\). This function has easily computable roots for comparison with the roots we subsequently obtain by a generative model. We find those roots next with a conventional function \texttt{numpy.roots}.
 
@@ -420,7 +420,7 @@ For this specific example there is a near analytical way to get the roots using 
 
 An obvious disadvantage, however, is we relied on a lot of function samples, far more than would be required with a nonlinear root finder in this case. It is unclear how little data might be required, or how to develop the most effective set of data points to build this model.
 \subsubsection{Finding imaginary roots}
-\label{sec:org1264630}
+\label{sec:orgaaba379}
 
 In the previous example we did not find imaginary roots because we only sampled a real space. We aim here to find imaginary roots. For a concrete example we consider \(x^3 - x^2 + x - 1 = 0\). There are three roots: \(x=1, \pm i\). We can express these in complex form as \(x=1 + 0j, 0 + 1j, 0 - 1j\).
 
@@ -1097,7 +1097,7 @@ plt.ylabel('imag');
 
 We can see there are only three pairs of samples, one at (1, 0), which is the real root, and two at (0, 1) and (0, -1) which represent the pair of imaginary results.
 \subsection{Optimization with generative models}
-\label{sec:orgeeea9c0}
+\label{sec:org6518931}
 
 In the previous examples, we found roots by generating conditional samples where the function had a desired value. It is certainly possible to generate samples and then find the minimum and maximum values in the samples. There is a better way though if we recognize that we can generate derivative samples and then sample by conditioning on a derivative equal to zero.
 
@@ -1223,7 +1223,7 @@ cluster_stats(results)
 \includegraphics[width=.9\linewidth]{./.ob-jupyter/59404dc33565dc1b90dc0716699e98d9e2784435.png}
 \end{center}
 \subsection{Optimization with an equality constraint}
-\label{sec:org379bbc6}
+\label{sec:orge05466a}
 
 With an equality constraint it may not be possible to solve this by conditioning on a derivative being zero; if the constraint is active, the derivative(s) of the objective function may not be equal to zero at the solution. To solve this generatively, we turn to a Lagrange function that transforms the constrained problem to an unconstrained problem where the derivatives of the Lagrange function are equal to zero. So we just construct this function, generate samples of the inputs (including the \(\lambda\) values) and the derivatives of the Lagrange function. Then we find solutions by conditioning on \(L' = 0\). We will have samples of \(x, y, z, \lambda\), \(d\mathcal{L}/dx\), \(d\mathcal{L}/dy\), \(d\mathcal{L}/dz\), \(d\mathcal{L}/d\lambda\).
 
@@ -1379,7 +1379,7 @@ P[0][0:3]  # x, y, z
 array([ 0.99999785, -0.49999902,  0.49999868])
 \end{verbatim}
 \subsection{Constrained optimization with an inequality}
-\label{sec:orgd98a135}
+\label{sec:orgbba01b6}
 
 Inequality constraints bring a new challenge to using a generative method; there could be a range of possible values that could satisfy the solution (that is the nature of inequality), so it is not possible to condition on one set of values like it is with the equality constraint. A benefit of the conventional \texttt{minimize} function in \texttt{scipy} is one simply changes the constraint type, as shown in this example. Here we seek to minimize \((x-2)^2 + (y-1)^2\) subject to \(x + y \ge 1\). We first use a conventional solver from \texttt{scipy} that encodes the constraint in a function, and declares it an inequality in a dictionary argument to the solver.
 
@@ -1474,7 +1474,7 @@ array([[2.0000003 , 1.00000021]])
 
 That is the answer we seek. We again emphasize we make no claims of superiority of the generative solution to the one from \texttt{scipy.optimize.minimize}. Indeed, we had to reformulate the problem here, and use a sampling approach. Our primary interest in this problem was simply demonstrating the possibility.
 \subsection{Parameter estimation with generative models}
-\label{sec:org5e85872}
+\label{sec:org5e4d9fd}
 
 Parameter estimation in regression is a kind of inverse problem. Usually we consider this in the context of optimization as finding a set of parameters (inputs) that minimize an objective function (outputs) of the errors between a model and observations. To recast this idea for a generative model, we consider the dataset as having columns of parameters (inputs) and observations (outputs). The observations could be derivatives of the objective function, and then one conditions on those being zero like we did before. We take an alternative approach here, and consider the observations to be some output of a model. Then, given an observation, we condition on that to obtain the parameters most consistent with that observation. This approach is fundamentally different than regression where parameters are estimated by minimizing some function of pooled errors.
 
@@ -1668,7 +1668,7 @@ k_2 = 2.42 +/- 0.15
 
 We reiterate that the distribution here is due to the GMM surrogate model of the distribution not fitting the data perfectly well, as seen in the parity plot. It is also possible to use this approach to map uncertainties in the inputs to the outputs and vice versa. For example, if one has the confidence intervals of a parameter they can map that range onto outputs with this approach. We illustrate this kind of mapping in Sec. \ref{sec-mapping}.
 \subsubsection{Caveats}
-\label{sec:orgd533743}
+\label{sec:org142a409}
 
 It is not reasonable to think that this approach would work for observations outside the data range. This is akin to extrapolation, and these models are not reliable for that. Here we show two kinds of extrapolation. The first is an observation of negative concentration, which is an unphysical observation. In the second example, we specify a value of B outside the observed data range. Both cases lead to estimated parameters. In the first case, the parameters do not lead to the conditioned outputs. In the second case, an unphysically negative rate constant is predicted.
 
@@ -1721,7 +1721,7 @@ Mean: [ 1.9821 -1.7525]
 Std:  [0.1071 0.0438]
 \end{verbatim}
 \subsection{Mapping input and output spaces  \label{mapping}}
-\label{sec:org2ead2f2}
+\label{sec:org7f98cd6}
 
 We previously developed a mapping approach based on differential equations  \cite{alves-2023}. We illustrate here that this can also be achieved by a generative model. We expand this idea to using a generative model here. The goal is to map a desired output space in the concentration of A, B from a CSTR to the input space of the radius of a CSTR, and the temperature (in units of \(RT\)) that achieves it. We have a design with fixed height, and we can modify the radius and temperature (via RT). There are two reactions: A \(\rightarrow\) B, that is second order in A, and A \(\rightarrow\) C, that is first order in A. We seek a design space with desired amounts of A and B in the exit. We choose a circular region in the output space, and map it to the input space.
 
@@ -1847,7 +1847,7 @@ This is not the same as learning a forward or backward model, e.g. a neural netw
 
 We think there is a connection between the mapping of input and output spaces by differential equations we previously developed \cite{alves-2023} and modern diffusion and continuous flow mapping (CFM) generative models. We used a differentiable model to derive a set of ODEs that connect the inputs and outputs. We considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In diffusion and CFM models, one uses machine learning to learn the vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea we developed.
 \section{Conclusions}
-\label{sec:org25c0f21}
+\label{sec:orgd4f9045}
 
 We have illustrated several different examples of using generative models in optimization tasks that ranged from root finding, optimization, optimization with constraints, and parameter estimation. In each case the solution is obtained by conditional generation from a distribution trained from samples of inputs and outputs. In root-finding, the outputs are function values. In optimization, the outputs include derivatives. For constrained optimization, the outputs were derivatives of an augmented Lagrange function. In parameter estimation, we used observations for the outputs. The identification of the input / output pairs that allow one to generate conditional samples from specific values is the key to using generative models this way.
 
@@ -1859,10 +1859,10 @@ Generative models currently do not have the same tools for analysis that regular
 
 Nevertheless, this work shows that generative methods have enormous possibility in a broad range of applications we have not previously considered them for in optimization, as surrogate models, and likely others we have not thought of yet. There are many generative models in existence today, and new ones are still being found. It seems likely these will mitigate problems we have illustrated in this work, and make new approaches possible in the future. We are most excited by the new way of thinking about problems that this approach now enables.
 \section{Acknowledgments}
-\label{sec:orgfe2570c}
+\label{sec:org040256a}
 
 JRK acknowledges Carl Laird for suggesting the barrier function approach for problems with inequality constraints.
 
 \bibliographystyle{unsrtnat}
-\bibliography{../../../bibliography/references,alves}
+\bibliography{manuscript}
 \end{document}
