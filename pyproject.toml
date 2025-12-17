@@ -1,0 +1,16 @@
+[project]
+name = "generative-optimization"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "gmr>=2.0.2",
+    "jax>=0.8.1",
+    "jupyter>=1.1.1",
+    "matplotlib>=3.10.8",
+    "numpy>=2.3.5",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.16.3",
+    "torch>=2.9.1",
+    "tqdm>=4.67.1",
+]
