@@ -83,6 +83,16 @@ readme:
 	@echo "Executing readme.ipynb..."
 	@$(JUPYTER_EXECUTE) readme.ipynb
 
+# Build PDF from LaTeX
+.PHONY: pdf
+pdf: manuscript.pdf
+
+manuscript.pdf: manuscript.tex
+	@echo "Building PDF from manuscript.tex..."
+	latexmk -C manuscript.tex
+	latexmk -pdf manuscript.tex
+	@echo "PDF built successfully!"
+
 # Clean checkpoint files
 .PHONY: clean
 clean:
@@ -115,6 +125,7 @@ help:
 	@echo "  other     - Execute other example notebooks"
 	@echo "  results   - Execute results notebooks (after GMM and FM)"
 	@echo "  readme    - Execute readme.ipynb"
+	@echo "  pdf       - Build PDF from manuscript.tex"
 	@echo "  list      - List all notebooks"
 	@echo "  clean     - Remove checkpoint files"
 	@echo "  help      - Show this help message"

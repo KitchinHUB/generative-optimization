@@ -7,3 +7,11 @@
 /old/
 /*.tdo
 /__pycache__/
+/acs-manuscript.bib
+*.aux
+*.bbl
+*.out
+*.log
+*.fls
+*.blg
+*.fdb_latexmk
