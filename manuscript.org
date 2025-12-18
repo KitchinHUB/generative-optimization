@@ -3,7 +3,7 @@
 #+author: Victor Alves and John R. Kitchin
 
 \maketitle
-\tableofcontents
+
 
 #+BEGIN_abstract
 Solving optimization problems, especially for nonlinear and constrained systems, is a challenge. Decades of specialized algorithms have been developed for general and special cases of root finding, minimization (including constraints), for parameter estimation, and mapping connected spaces. These approaches typically require a model, or set of equations, and then analytical, or iterative numerical approaches can be used to find a solution, and in some special cases a globally best solution can be found and proven. In this work we present an alternative approach to solving these problems that is based in generative machine learning models. The idea is these models either estimate a joint probability distribution of input and output variables, or are able to transform a distribution of inputs to a distribution of outputs (or vice versa). Then, by suitable conditioning (specifying desired properties of some variables), the solutions to these problems can be obtained by sampling the distribution, or by transformation of a distribution sample to the solution space. We illustrate the approach with Gaussian mixture models, which approximate the joint probability distribution. We show examples in root finding, unconstrained and constrained optimization, parameter estimation and mapping input and output spaces. This work is intended to be pedagogical to show how a generative model can be used to solve problems in optimization. We discuss some limitations of this approach, but conclude the approach has promise and is different than existing approaches.
@@ -33,15 +33,14 @@ Thus, if we can learn or estimate the joint probability distribution, we can gen
 
 To connect this idea to finding minima/maxima we simply need to see the connection between inputs of a model and its derivatives. If we know that joint probability distribution, then we generate samples conditioned on the derivatives being equal to zero. We can include constraints by leveraging a Lagrangian function, or another augmented function and condition the derivatives of that to be zero. Finally, in parameter estimation, we need the joint probability distribution between the parameters and an observed output(s). Then to estimate parameters from an observation, we simply condition on the observation to find the parameters. These are all related to solving inverse problems in optimization.
 
+An alternative approach to generative modeling is to transform a simple distribution into a more complex distribution. In diffusion and flow-matching models, this transformation is learned from data, and then it is used conditionally to generate samples of a target distribution (e.g. the outputs) from samples of a simpler distribution such as a normal distribution.
+
 We think this approach is fundamentally different than a conventional view point. There may be a model involved, but it is not necessary; the approach can be completely data-driven in some cases. We do not need to think about a forward or inverse model. The joint probability distribution (or the transformation function) is simultaneously both of these; conditioning determines what direction if any one thinks in (for example, it is possible to condition on some inputs and outputs). That means we get solutions to optimization problems without using conventional approaches like Newton-Raphson iterative methods, or other specialized algorithms like simplex methods to solve nonlinear programs. We make no claims of superiority of generative methods over the well-established methods; indeed, conventional algorithms offer many advantages to the ideas presented here. Instead, we focus on developing a proof of concept for a new way to think about solving these problems. We do this through a series of examples that span root finding, minimization including constraints, parameter estimation, and state mapping.
 
 GenML has the potential to serve as an alternative optimization solution approach to several classes of problems listed above, including linear and nonlinear programming (both constrained and unconstrained), parameter estimation problems, inverse mapping, and root finding, to name a few. Intriguingly, we have observed that the solution approach to these types of problems is remarkably consistent, as opposed to highly-tailored and specific algorithms (the current /status quo/) as long as data is available. We do not anticipate that generative machine learning formulations will replace classic mathematical programming development. Instead, we believe that a branch of optimization problems that can be solved by using GenML will employ even more sophisticated optimization algorithms at the training and inference of generative models. In short, the optimization layer will always be present, and its interaction with the researcher/practitioner will be what might change within the next years.
 
 * Methods
 
-We will focus on Gaussian Mixture Models (GMM) in this work, particularly an implementation in ~gmr~ [[cite:&fabisch-2021-gmr]]. There are other generative models based on diffusion and continuous flow matching [[cite:&jolicoeur-martineau-2023-gener-imput]] that also work, but for the purpose of this paper, they function practically the same. Analogous to the "no free lunch" theorem, there is no one-size-fits all generative model; but, with enough data and training, they all perform the same on average [[cite:&wolpert-1997-no-free]]. This is analogous to it not mattering whether one chooses a neural network or Gaussian process model; with enough data they are are both useful, and the choice is often made out of convenience or preference.
-
-{>~ @jk we need to consider moving this to another section, maybe in SI or the repo. My concern is we won't have this level of detail for flow matching and it will be imbalanced.~<}
 ** Gaussian mixture models
 
 Gaussian Mixture Models (GMMs) are a powerful and versatile mathematical tool that is able to characterize complex and multimodal distributions by combining multiple individual Gaussians. They are used in machine learning applications related but not limited to data clustering cite:&Yang_2019_ICCV;&viroli_deep_2019. They are also recognized in the literature related to pattern recognition in machine learning cite:&bishop2006pattern. Furthermore, in the field of robotics, Gaussian Mixture Regression (GMR) has been used as a generative modeling framework  cite:&Fabisch2021,  and it is considered a generative model cite:&deisenroth2020mathematicsML. We follow the notation from Ref citenum:&Fabisch2021 for the mathematical definition of GMMs. However, the reader should note that equally valid formulations are present in the literature cite:&deisenroth2020mathematicsML;&bishop2006pattern.
@@ -129,8 +128,68 @@ Eq. ref:eq:GMM_predict_compact plays a major role in our work. As we draw sample
 Lastly, we note that typical optimization techniques are used, more specifically during the training step of the generative approach, namely the EM algorithm cite:&nips1993_EM. However, this optimization step that requires $\mathcal{O}(\mathcal{D}^3)$ for a dataset of dimensionality $\mathcal{D}$, is performed offline and separately from the applications in which the GM model is employed.
 
 
+** Conditional normalizing flow matching
+
+Flow matching is a simulation-free approach to training continuous normalizing flows cite:&lipman2023flow. Unlike traditional normalizing flows that require computing expensive Jacobian determinants, flow matching learns a time-dependent vector field $v_t(x)$ that transforms samples from a simple base distribution $p_0$ (typically $\mathcal{N}(0, I)$) to a target data distribution $p_1$ through ordinary differential equations (ODEs).
+
+Given a data sample $x_1 \sim p_1(x)$ and a base sample $x_0 \sim p_0(x)$, we construct a probability path $p_t(x)$ for $t \in [0,1]$ that interpolates between the two distributions. A common choice is the conditional Gaussian path:
+\begin{equation}
+p_t(x | x_1) = \mathcal{N}(x | t x_1, (1-(1-\sigma)t)^2 I)
+\end{equation}
+where $\sigma$ is a small constant (typically $10^{-5}$) to ensure numerical stability.
+
+The corresponding conditional vector field that generates this path is:
+\begin{equation}
+u_t(x | x_1) = \frac{x_1 - (1-\sigma)x}{1-(1-\sigma)t}
+\end{equation}
+
+For optimization problems, we extend flow matching to learn conditional distributions $p(x|c)$, where $x$ represents the decision variables and $c$ represents the conditioning information (e.g., constraint values, target objectives, or system parameters)  cite:&tong2023improving. This allows us to sample from different conditional distributions by simply changing the conditioning value.
+
+The conditional flow matching objective is:
+\begin{equation}
+\mathcal{L}_\text{CFM}(\theta) = \mathbb{E}_{t, p_1(x_1,c), p_0(x_0)} \left[ \| v_\theta(x_t, c, t) - u_t(x_t | x_1) \|^2 \right]
+\end{equation}
+where $v_\theta(x_t, c, t)$ is the learned vector field parameterized by a neural network with parameters $\theta$, $t \sim \text{Uniform}(0,1)$ is the time variable, $x_t \sim p_t(x | x_1)$ is a sample along the flow path, and $(x_1, c)$ are paired samples from the training data.
+
+We parameterize the vector field $v_\theta(x, c, t)$ using a multi-layer neural network with the following architecture: the Input (concatenation of $[x, c, t]$), the hidden layers (3 fully-connected layers with 64 units each and sigmoid activation functions), and the output (a vector field prediction $v \in \mathbb{R}^{d_x}$).
+
+The choice of sigmoid activations (rather than ReLU) provides smooth gradients throughout the network, which is beneficial for learning continuous vector fields cite:&chen2018neural. The model is trained using the following procedure. First, for each training sample, we store the input-output pair $(x, c)$ where $x$ represents the solution and $c$ represents the conditioning information. During training, each mini-batch involves sampling data pairs $(x_1, c)$ from the training set, sampling base noise $x_0 \sim \mathcal{N}(0, I)$, and sampling time $t \sim \text{Uniform}(0,1)$. We then construct the intermediate state $x_t = t x_1 + (1-(1-\sigma)t)x_0$ and compute the target vector field $u_t(x_t | x_1) = \frac{x_1 - (1-\sigma)x_t}{1-(1-\sigma)t}$. The training objective minimizes the mean squared error between the predicted and target vector fields using the Adam optimizer~\cite{kingma2014adam} with learning rate $10^{-3}$. To improve training stability, all input features are standardized to have zero mean and unit variance before training.
+
+Training typically requires 500 epochs with batch size 64 for the problems considered in this work. To generate samples from the learned conditional distribution $p(x|c)$, we solve the ODE:
+\begin{equation}
+\frac{dx}{dt} = v_\theta(x, c, t), \quad x(0) \sim \mathcal{N}(0, I)
+\end{equation}
+from $t=0$ to $t=1$ using the Euler method with $N=100$ steps:
+\begin{equation}
+x_{t+\Delta t} = x_t + v_\theta(x_t, c, t) \cdot \Delta t, \quad \Delta t = \frac{1}{N}
+\end{equation}
+
+The final state $x(1)$ represents a sample from $p(x|c)$. To obtain multiple samples, we simply repeat this process with different initial noise samples $x(0)$.
+
+Conditional flow matching offers several advantages for optimization problems. First, unlike score-based models cite:&song2020score or traditional normalizing flows cite:&papamakarios2021normalizing, flow matching provides simulation-free training that does not require computing expensive score functions or Jacobian determinants during training. Second, the learned distribution naturally captures multi-modal solutions, enabling exploration of the entire solution space when constraints admit multiple feasible points. Third, the flexible conditioning mechanism allows rapid sampling of solutions for different problem instances by simply changing the conditioning value $c$ without retraining the model. Fourth, the distribution of samples provides natural uncertainty quantification for the solutions. For problems with missing data or regions of low sampling density, flow matching learns to interpolate smoothly through these regions by leveraging the continuous nature of the learned vector field.
+
+
+** LLM usage
+
+We used Claude Code with the Opus 4.5 model extensively to develop the code in this work and for literature review. The manuscript was largely written by the authors.  The GMM code used in this work was originally written by the authors, and then integrated into the work by Claude Code. The conditional normalizing flow code and the narrative describing it in the manuscript was created with Claude Code.
+
+We note this here for two reasons. First is transparency. Second, we want to highlight how LLM usage enhanced and expanded the work. The first version of this work focused solely on the GMM approach with simpler examples. The use of an LLM enabled us to significantly expand the scope to include flow matching, and more sophisticated examples and visualization. The LLM also offers a new opportunity to engage with the work by "chatting" with the repository. We provide a ~SKILL.md~ file in the supporting repository that provides "Expert guidance for solving optimization problems using generative models (GMM and Flow Matching). Use when users need to solve optimization, inverse problems, or find feasible solutions under constraints using probabilistic sampling approaches.".
 
 * Results and discussion
+** Basic concepts of generative modeling
+
+In generative modeling we have two options. First, we can develop a model of the joint probability distribution between inputs $x$ and outputs $y$. Then we can conditionally generate samples, e.g. at fixed $x$ or fixed $y$ by updating the joint probability to reflect the residual degrees of freedom. The Gaussian Mixture Model is a generative model like this where there are analytical formulas to update the probabilities. We illustrate this conceptually below in Figure ref:fig-gmm.
+
+#+name: fig-gmm
+#+caption: GMM fit for $y = |x|$ with missing data in the region $-0.5 \leq x \leq 0.5$. The central panel shows the data (blue points), true function (red dashed), GMM fit $E[y|x]$ (blue solid line), and GMM density contours (green). The marginal distributions $P(x)$ (top) and $P(y)$ (right) show the overall data distribution. The bottom panel shows the conditional distribution $P(x|y=0.75)$, which is bimodal with modes at $x \approx \pm 0.75$, demonstrating GMM's ability to capture multi-modal inverse solutions despite missing data.
+[[./fig_gmm_example.png]]
+
+The generative approach in conditional flow matching is different. Instead of updating the joint probability distributions these models learn a conditional velocity field that transforms one distribution (often a simple normal distribution) into the target distribution. We show a result for this below in Figure ref:fig-fm for the same problem we solved above with the GMM.
+
+#+name: fig-fm
+#+caption: Flow Matching trajectories for $y = |x|$ with missing data. Left panel shows the initial noise distribution $N(0,1)$ at $t=0$. Center panel shows 20 trajectories evolving from noise to data, conditioned on $y=0.75$, with gray arrows indicating the learned velocity field $v(x,t,y=0.75)$. Right panel shows the final conditional distribution $P(x|y=0.75)$ at $t=1$, which is bimodal with modes at $x \approx \pm 0.75$, matching the true inverse solutions. Flow Matching learns to transform a simple Gaussian into a complex bimodal distribution conditioned on the target value.
+[[./fig_fm_example.png]]
+
 ** Root finding  label:sec-root-finding
 
 In root finding we seek values of $x$ where $f(x) = 0$. Traditional approaches include bisection, Newton-Raphson iteration, and polynomial root solvers. Here we demonstrate a generative approach where we learn the joint distribution $p(x, f(x))$ and then condition on $f(x) = 0$ to generate samples of the roots.
@@ -370,9 +429,11 @@ This is not the same as learning a forward or backward model, e.g. a neural netw
 
 There is a connection between the mapping of input and output spaces by differential equations we previously developed [[cite:&alves-2023]] and the generative models we use here. We used a differentiable model to derive a set of ODEs that connect the inputs and outputs. We considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In flow-mapping one uses machine learning to learn the vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea we developed.
 
+
+
 * Conclusions
 
-We have illustrated several different examples of using generative models in optimization tasks that ranged from root finding, optimization, optimization with constraints, and parameter estimation. In each case the solution is obtained by conditional generation from a distribution trained from samples of inputs and outputs. In root-finding, the outputs are function values. In optimization, the outputs include derivatives. For constrained optimization, the outputs were derivatives of an augmented Lagrange function. In parameter estimation, we used observations for the outputs. The identification of the input / output pairs that allow one to generate conditional samples from specific values is the key to using generative models this way.
+We have illustrated several different examples of using generative models in optimization tasks that ranged from root finding, optimization, optimization with constraints, parameter estimation and state mapping. In each case the solution is obtained by conditional generation from a distribution trained from samples of inputs and outputs. In root-finding, the outputs are function values. In optimization, the outputs include derivatives. For constrained optimization, the outputs were derivatives of an augmented Lagrange function. In parameter estimation, we used observations for the outputs. The identification of the input / output pairs that allow one to generate conditional samples from specific values is the key to using generative models this way.
 
 There are a few ways this generative approach could fail. First, if it is hard to model the distribution, or learn the transformation the approach would obviously fail. Second, even if it succeeds, there is no guarantee one finds all the possible solutions, even of the surrogate function. The surrogate function may not have sufficient accuracy to find the true solutions of the real system, or may have artifacts that lead to false solutions. The models are built from and the solutions are found by sampling. For well-behaved broad distributions, sampling should work very well. For poorly-behaved distributions, e.g. where there is a very sharp probability, it is possible to miss a result, both in building the model and sampling it for solutions.
 
@@ -391,6 +452,10 @@ bibliography:manuscript.bib
 
 
 
+
+* Data Availability Statement
+
+As Supporting Information we provide https://github.com/KitchinHUB/generative-optimization which contains extensive examples in the form of Jupyter notebooks for the GMM and flow-matching examples, and the notebooks that were used to generate the figures in this manuscript. In addition to the examples discussed in the manuscript there are additional examples on advanced optimization topics and visualization, the SKILL.md file for use with LLMs and automation tools for running the notebooks.
 
 * build                                                            :noexport:
 

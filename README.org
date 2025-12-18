@@ -11,26 +11,25 @@ https://github.com/KitchinHUB/generative-optimization
 
 * Tasks
 
-** Done remove code blocks
-
-** Normalizing flows methods?
-
-** Overall strategy
-
-We have six examples. We can solve each one with GMM and NF.
-
-
-
+[[cite:&tedesco-2025-multis-pertur]]
 * TODO double check the octane example is described correctly like it is solved in the notebooks
-
-* TODO Add timing info and platform info to each notebook
 
 * TODO Check advanced examples and make sure they do what i want
 
 for example the rastrigin example does not look good
 
-* TODO add LLM acknowledgement / discussion
+* DONE Add timing info and platform info to each notebook
+CLOSED: [2025-12-18 Thu 07:59]
 
-* TODO add tutorial section on GMM and normalizing flow
+For each notebook I want a section at the top that has important system and library information that was used in running the notebooks. I also want to add timing and memory usage information, e.g. capture the initial time and memory usage (in MB) at the beginning and then the elapsed time at the end. update every notebook with this information.
+
+* DONE add LLM acknowledgement / discussion
+CLOSED: [2025-12-18 Thu 07:59]
+
+* DONE add tutorial section on GMM and normalizing flow
+CLOSED: [2025-12-18 Thu 07:37]
+
+* DONE Create a SKILL.md
+CLOSED: [2025-12-18 Thu 08:04]
 
 * TODO Make a last conversion of manuscript.org to tex and delete the org
