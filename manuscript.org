@@ -159,28 +159,66 @@ $Z_{\text{vapor}}$ & $0.8201 \pm 0.0044$ & $0.8208$ \\
 
 The generative approach naturally discovers all three roots simultaneously, whereas iterative methods like Newton-Raphson find only the root nearest to the initial guess and require multiple starting points to find all roots. The generative framework extends naturally to finding complex roots by treating real and imaginary parts as separate dimensions. An example of this can be found in the supporting information.
 
-#+name: fig:pr-roots#+caption: Comparison of Gaussian Mixture Model (GMM) and Flow Matching (FM) approaches for root finding in the Peng-Robinson equation of state. (a) The PR-EOS cubic residual for propane at T = 300 K and P = 10 bar, showing the true function (black solid line) along with the learned fits from GMM (red dashed) and FM (blue dotted). Both generative models accurately capture the functional relationship between compressibility factor Z and the cubic residual. Green circles indicate the three analytical roots corresponding to liquid ($Z_L$ = 0.049), unstable ($Z_{unstable}$ = 0.161), and vapor ($Z_V$ = 0.803) phases. (b) Distribution of roots obtained by conditioning each model on residual = 0. Both methods successfully identify all three roots, with the GMM producing slightly sharper distributions due to its analytical conditioning, while FM generates samples through numerical integration of the learned velocity field.
+#+attr_latex: :placement [H]
+#+name: fig:pr-roots
+#+caption: Comparison of Gaussian Mixture Model (GMM) and Flow Matching (FM) approaches for root finding in the Peng-Robinson equation of state. (a) The PR-EOS cubic residual for propane at T = 300 K and P = 10 bar, showing the true function (black solid line) along with the learned fits from GMM (red dashed) and FM (blue dotted). Both generative models accurately capture the functional relationship between compressibility factor Z and the cubic residual. Green circles indicate the three analytical roots corresponding to liquid ($Z_L$ = 0.049), unstable ($Z_{unstable}$ = 0.161), and vapor ($Z_V$ = 0.803) phases. (b) Distribution of roots obtained by conditioning each model on residual = 0. Both methods successfully identify all three roots, with the GMM producing slightly sharper distributions due to its analytical conditioning, while FM generates samples through numerical integration of the learned velocity field.
 [[./preos_comparison.png]]
 
 ** Optimization with generative models
 
-In the previous examples, we found roots by generating conditional samples where the function had a desired value. It is certainly possible to generate samples and then find the minimum and maximum values in the samples. There is a better way though if we recognize that we can generate derivative samples and then sample by conditioning on a derivative equal to zero.
+Consider consecutive first-order reactions in a batch reactor:
 
-We continue with the example from Section ref:sec-root-finding to find the stationary points in $y = x^4 - 4 x^2 + x + 3$. The derivative is analytically known: $y' = 4 x^3 - 8x + 1$. We show here there are three roots of the derivative of this function, and we generate samples of the derivative. For a more complex function, a library like ~jax~ or ~numdifftools~ could be used for the derivatives.
+  \begin{equation}
+  A \xrightarrow{k_1} B \xrightarrow{k_2} C
+  \end{equation}
+
+  where $B$ is the desired product and $C$ is an unwanted byproduct. The following parameters were used:
+  $k_1 = 0.5$ min$^{-1}$ (A $\rightarrow$ B), $k_2 = 0.2$ min$^{-1}$ (B $\rightarrow$ C), $C_{A0} = 1.0$ mol/L. This leads to an optimal solution of $\tau^* \approx 3.05$ min and $C_B(\tau^*) \approx 0.549$ mol/L.
+
+The concentration of intermediate $B$ at time $\tau$ is given by:
+  \begin{equation}
+  C_B(\tau) = \frac{C_{A0} k_1}{k_2 - k_1} \left(e^{-k_1\tau} - e^{-k_2\tau}\right)
+  \end{equation}
+  where $C_{A0}$ is the initial concentration of $A$, and $k_1$, $k_2$ are the rate constants.
+
+The optimization problem is to find the residence time $\tau^*$ that maximizes the concentration of intermediate $B$:
+  \begin{equation}
+  \max_{\tau} C_B(\tau)
+  \end{equation}
+
+The first-order necessary condition for a maximum is:
+  \begin{equation}
+  \frac{dC_B}{d\tau} = C_{A0} k_1 \frac{k_2 e^{-k_2\tau} - k_1 e^{-k_1\tau}}{k_2 - k_1} = 0
+  \label{eq:optimality}
+  \end{equation}
+
+Solving equation \eqref{eq:optimality} yields the analytical optimum:
+  \begin{equation}
+  \tau^* = \frac{\ln(k_1/k_2)}{k_1 - k_2}
+  \end{equation}
+
+The second derivative confirms this is a maximum:
+  \begin{equation}
+  \frac{d^2C_B}{d\tau^2}\bigg|_{\tau=\tau^*} < 0
+  \end{equation}
+
+ Rather than solving the optimality condition analytically, the generative approach:
+  \begin{enumerate}
+  \item Generates training data consisting of tuples $\left(\tau, C_B(\tau), \frac{dC_B}{d\tau}\right)$
+  \item Learns the joint distribution $p\left(\tau, C_B, \frac{dC_B}{d\tau}\right)$
+  \item Identifies the optimum by sampling from the conditional distribution:
+  \begin{equation}
+  p\left(\tau \mid \frac{dC_B}{d\tau} = 0\right)
+  \end{equation}
+  \end{enumerate}
+
+  This probabilistic inference approach generalizes to complex reaction networks where analytical solutions do not exist.
 
 
-To find these conditional generation, we first build the GMM model for the joint distribution of $x$, $y$ and $y\_prime$. It is not essential to include $y$, but one can find $(x, y)$ this way. Here we use a parity plot for a qualitative analysis of the quality of fit.
-After fitting, we can plot the data to see how well the model works.
-
-Now we sample for $y' = 0$ and plot the histogram of results. These are pretty close to the analytical solutions. You need a more accurate model (e.g. from more data, and with more Gaussians) to do better.
-
-
-
-Note that we find three places where the derivative is zero as expected. However, these correspond to two minima and one maxima. We can further constrain this with samples of the second derivative. We don't know in advance what the value of the Hessian will be, so we cannot directly condition on that. Let us be clever then, and use 1 if second derivative is positive, and -1 if it is negative. Then we condition on $y'=0$ and $y_{sign}''=-1$. This leads us to one solution, which corresponds to the maximum.
-
-
-
-If we condition instead on $y''=1$, we find the minima instead.
+#+attr_latex: :placement [H]
+#+name: fig-optimization
+#+caption: Optimization via conditional sampling for consecutive reactions A \rightarrow B \rightarrow C. (a) Intermediate product concentration $C_B(\tau)$ shows maximum at \tau * ≈ 3.05 min. (b) First derivative $dC_B/dτ$ crosses zero at the optimum. (c-d) GMM and Flow Matching identify the optimum by sampling from $P(τ | dC_B/dτ = 0)$, producing narrow distributions (red/blue solid lines show means) that closely match the analytical solution (black dashed line). Both methods successfully solve the optimization problem through probabilistic inference, demonstrating that conditioning on the optimality condition (derivative = 0) yields the optimal residence time with inherent uncertainty quantification.
+[[./optimization_comparison.png]]
 
 
 ** Optimization with equality constraints
@@ -223,13 +261,14 @@ The generative approach transforms this constrained optimization into a sampling
 
 The reference solution from ~scipy.optimize.minimize~ with the SLSQP method yields $x_1 = 0.284$, $x_2 = 0.607$, $x_3 = 0.109$. Conditioning the GMM on $\nabla\mathcal{L} = 0$ recovers this solution with high accuracy: GMM estimates of $x_1 = 0.284 \pm 0.004$, $x_2 = 0.607 \pm 0.008$, $x_3 = 0.109 \pm 0.003$. The optimal blend deviates from the target to satisfy the octane constraint, using more isomerate (which has the lowest octane) and less reformate than the target recipe.
 
+#+attr_latex: :placement [H]
 #+name: fig:blending
 #+caption: Comparison of GMM and Flow Matching for equality-constrained optimization of a gasoline blending problem. The objective is to find the blend composition closest to a target recipe ($x_1^* = 0.4$, $x_2^* = 0.4$, $x_3^* = 0.2$) while satisfying an octane specification (RON = 87) and mass balance constraint. Panels (a)-(c) show the sample distributions for each blend fraction obtained by conditioning on the KKT conditions ($\nabla\mathcal{L} = 0$). Red histograms: GMM samples; blue histograms: Flow Matching samples; solid black lines: scipy SLSQP reference solution; dashed green lines: target blend values. Both generative methods produce distributions centered near the optimal solution, with GMM showing slightly tighter distributions than Flow Matching. The optimal blend deviates from the target to satisfy the octane constraint, using more isomerate ($x_2$) and less reformate ($x_1$) than targeted.
 [[./blending_comparison.png]]
 
 ** Constrained optimization with an inequality
 
-Inequality constraints bring a new challenge to using a generative method; there could be a range of possible values that could satisfy the solution (that is the nature of inequality), so it is not possible to condition on one set of values like it is with the equality constraint. A benefit of the conventional ~minimize~ function in ~scipy~ is one simply changes the constraint type, as shown in this example. Here we seek to minimize $(x-2)^2 + (y-1)^2$ subject to $x + y \ge 1$. We first use a conventional solver from ~scipy~ that encodes the constraint in a function, and declares it an inequality in a dictionary argument to the solver.
+Inequality constraints bring a new challenge to using a generative method; there could be a range of possible values that could satisfy the solution (that is the nature of inequality), so it is not possible to condition on one set of values like it is with the equality constraint. A benefit of the conventional ~minimize~ function in ~scipy~ is one simply changes the constraint type.
 
 We cannot use the Lagrange method for an inequality constraint the same way we did for an equality constraint. Instead we consider the barrier method cite:&nocedal2006numerical. Recalling the barrier function for the inequality-constrained optimization problem defined as in Eq. ref:eq:barrier_ineq, in which the objective function incorporates the set of inequality constraints $\mathcal{I}$ with the form illustrated below.
 
@@ -261,6 +300,7 @@ For $K_{eq} = 4$, the analytical solution is $\xi^* = 0.5$, giving equilibrium c
 
 To solve this constrained root finding problem with a generative approach, we sample $\xi$ values only within the feasible region $(0, 1)$ and compute the equilibrium residual $f(\xi)$ for each sample. We train generative models on the joint distribution $[\xi, f(\xi)]$ and condition on $f(\xi) = 0$ to find the equilibrium extent. The constraint is naturally enforced by the sampling domain. Both GMM and Flow Matching successfully identify $\xi \approx 0.5$, as shown in Figure ref:fig:equilibrium.
 
+#+attr_latex: :placement [H]
 #+name: fig:equilibrium
 #+caption: Reaction equilibrium $A + B \rightleftharpoons 2C$ with physical constraints requiring non-negative concentrations. (a) The equilibrium residual $f(\xi) = K_{eq}(1-\xi)^2 - 4\xi^2$, which equals zero at the equilibrium extent $\xi^* = 0.5$. (b) Distributions of $\xi$ values obtained by conditioning GMM (red) and Flow Matching (blue) on $f(\xi) = 0$. Both methods successfully identify the analytical solution (black dashed line).
 [[./equilibrium_comparison.png]]
@@ -277,66 +317,28 @@ $dF_a/dV = -k_1 F_a / \nu$
 
 $dF_b/dV = k_1 F_a / \nu - k_2 F_b / \nu$
 
-We sample a range of rate constants and compute the exit molar flows of A and B. This data set is what we will use to build a generative model next.  We generate samples of $k_1, k_2$ in the range of 0.1..3. We can see what this data looks like here.
+We sample a range of rate constants and compute the exit molar flows of A and B. This data set is what we will use to build a generative model next.  We generate samples of $k_1, k_2$ in the range of 0.1..3. We can see what this data looks like in Figure ref:fig-k1-k2-ca-cb.
 
-{>~ @jk  need a figure here ~<}
+#+attr_latex: :placement [H]
+#+name: fig-k1-k2-ca-cb
+#+caption: Contour plots of the relationships between $k_1$ and $k_2$ and a) $F_A$ and b) $F_B$.
+[[./k1-k2-Ca-Cb.png]]
 
-The top figure shows how $F_a$ and $F_b$ vary. It is evidently not enough to specify one of these values to uniquely specify the rate constants. In Fa, there are near vertical isolines, and in Fb other isolines. For example, for $k_1=2$, $F_a$ will be between 0-0.02 for a broad range of $k_2$ values, and which value of $k_2$ that is chosen depends on the value of $F_b$ that is observed. If you see low $F_b$, $k_2$ will be closer to 2, and if $F_b$ is high, then $k_2$ is closer to 0.2.
+It is evidently not enough to specify one of these values to uniquely specify the rate constants. In $F_A$, there are near vertical isolines, and in $F_B$ other isolines. For example, for $k_1=2$, $F_a$ will be between 0-0.02 for a broad range of $k_2$ values, and which value of $k_2$ that is chosen depends on the value of $F_b$ that is observed. If you see low $F_b$, $k_2$ will be closer to 2, and if $F_b$ is high, then $k_2$ is closer to 0.2.
 
-Before we can see that, we first fit the generative model.
-
-
-Now we estimate parameters for two scenarios at the exit:
+For generative parameter estimation we can consider the following joint probability distribution $[k_1, k_2, F_A, F_B]$, and then condition the distribution on observed output concentrations to generate the set of parameters that are consistent that those observations. For illustrative purposes we estimate parameters for two scenarios at the exit:
 
 1. A low molar flow of A with low molar flow of B, i.e. both reactions are fast.
 2. A low molar flow of A with high molar flow of B, i.e. reaction 1 is fast, and reaction 2 is slow.
 
-Finally, we can check this result. Here is the case for low molar flows of A and low molar flows of B. This means that $k_2$ must be high, so that B is consumed. That is what we observe.
+#+attr_latex: :placement [H]
+#+name: fig-parest
+#+caption: Estimating rate constants (k₁, k₂) from reactor exit flows (F_A, F_B) using GMM and Flow Matching. Left panels show joint distributions in parameter space; right panels show marginal distributions. (a-b) Scenario 1 ($F_A$ = 0.02, $F_B$ = 0.05): Both reactions fast, requiring high $k_1$ and $k_2$. (c-d) Scenario 2 ($F_A$ = 0.02, $F_B$ = 0.65): First reaction fast, second slow, requiring high $k_1$ and low $k_2$. Both methods correctly identify the parameter regimes. GMM shows minor multimodality due to the non-unique inverse problem, while Flow Matching produces smoother distributions. Mean estimates (stars) accurately reproduce the target observations.
+[[./parameter_estimation_comparison.png]]
 
 
-Here is the case for low concentration of A and high concentration of B. That means $k_2$ must be low, and it is, and so B accumulates.
+It is also possible to estimate an uncertainty of sorts. The distribution of the estimated rate constants is due to the surrogate models not fitting the data perfectly well, as seen in the parity plot. It is also possible to use this approach to map uncertainties in the inputs to the outputs and vice versa. For example, if one has the confidence intervals of a parameter they can map that range onto outputs with this approach. We illustrate this kind of mapping in Sec. ref:mapping, and previously showed an approach using inverse mapping cite:&alves-2025-mappin-uncer.
 
-
-It is also possible to estimate an uncertainty of sorts. We reconsider the case where there is a low molar flow of A (0.02) with low molar flow of B (0.05) at the exit. We note "of sorts" because in this case there is no noise in the data, and the spread observed is related to deficiencies in the models.
-
-{>~ @jk show results~<}
-
-We reiterate that the distribution here is due to the GMM surrogate model of the distribution not fitting the data perfectly well, as seen in the parity plot. It is also possible to use this approach to map uncertainties in the inputs to the outputs and vice versa. For example, if one has the confidence intervals of a parameter they can map that range onto outputs with this approach. We illustrate this kind of mapping in Sec. ref:sec-mapping.
-
-*** Caveats
-
-{>~ @jk are these in the SI?~<}
-
-It is not reasonable to think that this approach would work for observations outside the data range. This is akin to extrapolation, and these models are not reliable for that. Here we show two kinds of extrapolation. The first is an observation of negative concentration, which is an unphysical observation. In the second example, we specify a value of B outside the observed data range. Both cases lead to estimated parameters. In the first case, the parameters do not lead to the conditioned outputs. In the second case, an unphysically negative rate constant is predicted.
-
-
-#+BEGIN_SRC jupyter-python
-Fa_exit, Fb_exit = solve_ivp(ode, t_span=(0, 2), y0=F0,
-                             args=P[1]).y[:, -1]
-
-with np.printoptions(precision=2):
-    print(f'k={P[1]}, Fa={Fa_exit:1.3f}, Fb={Fb_exit:1.3f}')
-
-#+END_SRC
-
-#+RESULTS:
-: k=[ 1.98 -1.75], Fa=0.019, Fb=17.678
-
-
-There is not even really a clue from the distribution here that something is wrong with that negative rate constant. Here we generate 1000 samples, and see that the distribution is fairly narrow compared to the predicted value. Note in this case, there is no noise in the data, so the distribution of predicted values here comes solely from the approximated distribution.
-
-#+BEGIN_SRC jupyter-python
-c = gmm.condition([2, 3], [[0.02, 2]])
-
-results = c.sample(1000)
-with np.printoptions(precision=4):
-    print(f'Mean: {np.mean(results, axis=0)[0:3]}')
-    print(f'Std:  {np.std(results, axis=0)[0:3]}')
-#+END_SRC
-
-#+RESULTS:
-: Mean: [ 1.9821 -1.7525]
-: Std:  [0.1071 0.0438]
 
 ** Mapping input and output spaces  label:mapping
 
@@ -356,18 +358,17 @@ which we can solve with the quadratic equation to get $C_A$ as a function of $(R
 
 $C_B = k_1 C_A^2 V / v_0$
 
-Thus, we can analytically map the input space to the output space. We do this by brute force sampling here and show a how a circular region in the output space maps to the input space. We choose this example because it is easy to do this analytically, but this forward mapping can also be done in nonlinear programs. A downside here is the "low" density of samples does not make the desired region especially well defined.
+Thus, we can analytically map the input space to the output space as shown in Figure ref:fig-mapping. We do this by brute force sampling here and show a how a circular region in the output space maps to the input space. We choose this example because it is easy to do this analytically, but this forward mapping can also be done in nonlinear programs.
 
-{>~ @jk need a figure.~<}
-
-
-
-Now we can generate more samples in the desired range. The output circle we desire is centered at (0.58, 0.3) with a radius of 0.08. We generate a lot of samples in this region.
+#+attr_latex: :placement [H]
+#+name: fig-mapping
+#+caption: Mapping a desired concentration region (b, red circle: Ca = 0.58, Cb = 0.30 ± 0.08 mol/L) to feasible design parameters using (a) GMM and (c) Flow Matching. Both methods identify the irregular, non-convex region in (R, RT) space that produces the target concentrations. Background points show training data colored by distance from origin. The complex shape of the mapped region reveals the nonlinear relationship between reactor size, temperature, and exit concentrations—demonstrating that multiple design configurations can achieve the same production target. This inverse mapping capability is unique to generative models.
+[[./space_mapping_comparison.png]]
 
 
 This is not the same as learning a forward or backward model, e.g. a neural network or Gaussian process model. This is an approximate, data-driven mapping through a joint distribution model. It is not as smooth as the mapping by ODEs, or an analytical mapping, but it might be suitable for some applications. Building the model from more samples would improve the mapping accuracy. It is also possible to map in the forward direction, e.g. from a desired input space to an output space. This has application in uncertainty propagation.
 
-We think there is a connection between the mapping of input and output spaces by differential equations we previously developed [[cite:&alves-2023]] and modern diffusion and continuous flow mapping (CFM) generative models. We used a differentiable model to derive a set of ODEs that connect the inputs and outputs. We considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In diffusion and CFM models, one uses machine learning to learn the vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea we developed.
+There is a connection between the mapping of input and output spaces by differential equations we previously developed [[cite:&alves-2023]] and the generative models we use here. We used a differentiable model to derive a set of ODEs that connect the inputs and outputs. We considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In flow-mapping one uses machine learning to learn the vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea we developed.
 
 * Conclusions
 

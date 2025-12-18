@@ -5,3 +5,32 @@
 
 
 [[./manuscript.org]]
+
+
+https://github.com/KitchinHUB/generative-optimization
+
+* Tasks
+
+** Done remove code blocks
+
+** Normalizing flows methods?
+
+** Overall strategy
+
+We have six examples. We can solve each one with GMM and NF.
+
+
+
+* TODO double check the octane example is described correctly like it is solved in the notebooks
+
+* TODO Add timing info and platform info to each notebook
+
+* TODO Check advanced examples and make sure they do what i want
+
+for example the rastrigin example does not look good
+
+* TODO add LLM acknowledgement / discussion
+
+* TODO add tutorial section on GMM and normalizing flow
+
+* TODO Make a last conversion of manuscript.org to tex and delete the org
