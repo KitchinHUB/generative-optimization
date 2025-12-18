@@ -32,7 +32,7 @@ Solving optimization problems, especially for nonlinear and constrained systems,
 \section{Introduction}
 
 
-The field of optimization is immense, with elegant solutions tailored to specific problem applications, depending on the nature of the objective function and constraints that are to be solved (e.g., linear \emph{vs.} nonlinear, convex \emph{vs.} nonconvex, differentiable \emph{vs.} nondifferentiable), the nature of the variables involved in the optimization problem (discrete, continuous, or both), and lastly, the nature of the solution itself, global \emph{vs.} local optimization. This myriad of problems that arise in many fields of science and engineering gave birth to several solution techniques, ranging from the seminal work of linear programming and the Simplex method by Dantzig \cite{dantzig1990origins}, to the advent of robust nonlinear programming techniques including sequential quadratic programming (SQP) \cite{Han1977,powell_sqp_1978,Wilson1963Simplicial}, and the popularization of interior-point methods \cite{wachter2006implementation}. Additionally, solutions of mixed integer nonlinear programming (MINLP) algorithms \cite{bonami2008} and recent innovations on generalized disjunctive programming (GDP) which embeds logical decisions into mathematical programming formulations \cite{grossmann_gdp}, and global optimization \cite{FLOUDAS20051185,Floudas2009,BOUKOUVALA2016701} are all examples of how rich is the literature on the topic.In Python the \texttt{scipy} library is particularly notable \cite{virtanen-2020-scipy}, but others also exist like \texttt{Pyomo} \cite{bynum-2021-pyomo-optim}, GEKKO \cite{beal-2018-gekko-optim-suite}, Gurobi \cite{gurobi}, Mosek \cite{Andersen2000}, and JuMP \cite{dunning-2017-jump}. These libraries include both algebraic optimization modeling languages as well as commercial and/or open-source optimization solvers. Despite all the work aforementioned, the list is by no means exhaustive, and many other interesting research directions are currently available and being actively developed.
+The field of optimization is immense, with elegant solutions tailored to specific problem applications, depending on the nature of the objective function and constraints that are to be solved (e.g., linear \emph{vs.} nonlinear, convex \emph{vs.} nonconvex, differentiable \emph{vs.} nondifferentiable), the nature of the variables involved in the optimization problem (discrete, continuous, or both), and lastly, the nature of the solution itself, global \emph{vs.} local optimization. This myriad of problems that arise in many fields of science and engineering has led to the development of numerous solution techniques, ranging from the seminal work of linear programming and the Simplex method by Dantzig \cite{dantzig1990origins}, to the advent of robust nonlinear programming techniques including sequential quadratic programming (SQP) \cite{Han1977,powell_sqp_1978,Wilson1963Simplicial}, and the popularization of interior-point methods \cite{wachter2006implementation}. Additionally, solutions of mixed integer nonlinear programming (MINLP) algorithms \cite{bonami2008} and recent innovations on generalized disjunctive programming (GDP) which embeds logical decisions into mathematical programming formulations \cite{grossmann_gdp}, and global optimization \cite{FLOUDAS20051185,Floudas2009,BOUKOUVALA2016701} are all examples of how rich is the literature on the topic.In Python the \texttt{scipy} library is particularly notable \cite{virtanen-2020-scipy}, but others also exist like \texttt{Pyomo} \cite{bynum-2021-pyomo-optim}, GEKKO \cite{beal-2018-gekko-optim-suite}, Gurobi \cite{gurobi}, Mosek \cite{Andersen2000}, and JuMP \cite{dunning-2017-jump}. These libraries include both algebraic optimization modeling languages as well as commercial and/or open-source optimization solvers. Despite all the work aforementioned, the list is by no means exhaustive, and many other interesting research directions are currently available and being actively developed.
 
 We see a particular interest in algorithmic development of solutions to optimization problems that are specific to the nature of the problem, its variables and local/optimal convergence criteria. However, less attention has been given to the use of emerging and powerful tools such as generative machine learning (genML) in the well-developed area of optimization. It is clear that optimization/mathematical programming is one of the cornerstones of machine learning (independent of the generative nature or lack thereof), but the reverse application, that is, genML as a tool to solve optimization problems, seems to be largely unexplored.
 
@@ -46,7 +46,7 @@ To orient the reader on where a generative-based optimization approach fits in t
 
 In this manuscript we explore a different way to think about optimization through generative machine learning (genML) \cite{gm-2020-compr-survey}. The basic concept in genML is that if one knows the joint probability distribution of a set of variables, then it is possible to generate samples of that distribution. Alternatively, if one knows how to transform a reference distribution to the joint probability distribution of those variables, then one samples the reference distribution and transforms it to a sample of the desired distribution.
 
-In fact, generative models have been applied to optimization problems before. Invertible neural networks are a special class of models that are used to model the joint distribution of inputs and outputs \cite{ardizzone-2019-analy-inver}. Once they are trained, feasible solutions can be found by sampling them. Diffusion models have been applied to inverse problems in mechanics \cite{dasgupta-2025-condit-score}. We recently applied genML to solve an inverse linear problem \cite{kitchin-2025-solvin}. Generative models can also be used to enhance combinatorial optimization problems \cite{alcazar-2024-enhan-combin} where they can be used to generate near-optimal solutions that are subsequently refined by conventional algorithms. Finally, generative adverserial models have been used in optimization \cite{yao-2024-gener-adver}.
+In fact, generative models have been applied to optimization problems before. Invertible neural networks are a special class of models that are used to model the joint distribution of inputs and outputs \cite{ardizzone-2019-analy-inver}. Once they are trained, feasible solutions can be found by sampling them. Diffusion models have been applied to inverse problems in mechanics \cite{dasgupta-2025-condit-score}. We recently applied genML to solve an inverse linear problem \cite{kitchin-2025-solvin}. Generative models can also be used to enhance combinatorial optimization problems \cite{alcazar-2024-enhan-combin} where they can be used to generate near-optimal solutions that are subsequently refined by conventional algorithms. Finally, generative adversarial models have been used in optimization \cite{yao-2024-gener-adver}.
 
 Probably the most common genML method used today is in the generation of text \cite{becker-2024-text-gener} and images \cite{elasri-2022-image-gener}. Large language models (LLMs) are a form of genML where the most likely sequence of words to follow a prompt is generated. LLMs are not the focus of this work. In image generation, a genML model is trained on a large set of images to "learn the image distribution", and then images are generated by sampling that distribution. We find it helpful to think of an image first as a matrix of pixel values (e.g. the RGB intensities), and then to think of that matrix as a flattened vector. Then, a large set of images will have a distribution of values in that vector space where there are correlations (covariance) between the elements of the vector that define an image space. Thus, one generates a sample vector, and then reshapes it into a matrix, which can be visualized as an image.  This is the motivation for the present work.
 
@@ -60,7 +60,7 @@ An alternative approach to generative modeling is to transform a simple distribu
 
 We think this approach is fundamentally different than a conventional view point. There may be a model involved, but it is not necessary; the approach can be completely data-driven in some cases. We do not need to think about a forward or inverse model. The joint probability distribution (or the transformation function) is simultaneously both of these; conditioning determines what direction if any one thinks in (for example, it is possible to condition on some inputs and outputs). That means we get solutions to optimization problems without using conventional approaches like Newton-Raphson iterative methods, or other specialized algorithms like simplex methods to solve nonlinear programs. We make no claims of superiority of generative methods over the well-established methods; indeed, conventional algorithms offer many advantages to the ideas presented here. Instead, we focus on developing a proof of concept for a new way to think about solving these problems. We do this through a series of examples that span root finding, minimization including constraints, parameter estimation, and state mapping.
 
-GenML has the potential to serve as an alternative optimization solution approach to several classes of problems listed above, including linear and nonlinear programming (both constrained and unconstrained), parameter estimation problems, inverse mapping, and root finding, to name a few. Intriguingly, we have observed that the solution approach to these types of problems is remarkably consistent, as opposed to highly-tailored and specific algorithms (the current \emph{status quo}) as long as data is available. We do not anticipate that generative machine learning formulations will replace classic mathematical programming development. Instead, we believe that a branch of optimization problems that can be solved by using GenML will employ even more sophisticated optimization algorithms at the training and inference of generative models. In short, the optimization layer will always be present, and its interaction with the researcher/practitioner will be what might change within the next years.
+GenML has the potential to serve as an alternative optimization solution approach to several classes of problems listed above, including linear and nonlinear programming (both constrained and unconstrained), parameter estimation problems, inverse mapping, and root finding, to name a few. Intriguingly, we have observed that the solution approach to these types of problems is remarkably consistent, as opposed to highly-tailored and specific algorithms (the current \textit{status quo}) as long as data is available. We do not anticipate that generative machine learning formulations will replace classic mathematical programming development. Instead, we believe that a branch of optimization problems that can be solved by using GenML will employ even more sophisticated optimization algorithms at the training and inference of generative models. In short, the optimization layer will always be present, and its interaction with the researcher/practitioner will be what might change within the next years.
 \section{Methods}
 
 \subsection{Gaussian mixture models}
@@ -226,16 +226,16 @@ Z^3 - (1-B)Z^2 + (A - 3B^2 - 2B)Z - (AB - B^2 - B^3) = 0
 
 \noindent where \(A = aP/(R^2T^2)\) and \(B = bP/(RT)\) are dimensionless parameters computed from the substance's critical properties. In the two-phase region, this cubic has three real roots: the liquid compressibility factor \(Z_L\), an unstable intermediate root, and the vapor compressibility factor \(Z_V\). For propane at \(T = 300\) K and \(P = 10\) bar (in the two-phase region), we generate training data by evaluating the cubic residual \(r(Z) = Z^3 - (1-B)Z^2 + (A - 3B^2 - 2B)Z - (AB - B^2 - B^3)\) over the domain \(Z \in [0.01, 0.99]\). We then fit generative models to the joint data \([Z, r(Z)]\).
 
-To find the roots, we condition on \(r(Z) = 0\) and sample from the resulting conditional distribution \(p(Z \mid r = 0)\). Figure \ref{fig:pr-roots} shows the conditional probability density, which exhibits three distinct peaks corresponding to the liquid (\(Z_L \approx 0.046\)), unstable (\(Z \approx 0.20\)), and vapor (\(Z_V \approx 0.82\)) roots. Cluster analysis of the samples yields:
+To find the roots, we condition on \(r(Z) = 0\) and sample from the resulting conditional distribution \(p(Z \mid r = 0)\). Figure \ref{fig:pr-roots} shows the conditional probability density, which exhibits peaks corresponding to the liquid (\(Z_L \approx 0.035\)), unstable (\(Z \approx 0.13\)), and vapor (\(Z_V \approx 0.81\)) roots. Cluster analysis of the samples yields:
 
 \begin{center}
 \begin{tabular}{lcc}
 \hline
 Root & GMM estimate & Analytical \\
 \hline
-$Z_{\text{liquid}}$ & $0.0459 \pm 0.0006$ & $0.0459$ \\
-$Z_{\text{unstable}}$ & $0.1962 \pm 0.0095$ & $0.1966$ \\
-$Z_{\text{vapor}}$ & $0.8201 \pm 0.0044$ & $0.8208$ \\
+$Z_{\text{liquid}}$ & $0.035 \pm 0.001$ & $0.0348$ \\
+$Z_{\text{unstable}}$ & $0.128 \pm 0.010$ & $0.1280$ \\
+$Z_{\text{vapor}}$ & $0.814 \pm 0.002$ & $0.8146$ \\
 \hline
 \end{tabular}
 \end{center}
@@ -245,7 +245,7 @@ The generative approach naturally discovers all three roots simultaneously, wher
 \begin{figure}[H]
 \centering
 \includegraphics[width=.9\linewidth]{./preos_comparison.png}
-\caption{\label{fig:pr-roots}Comparison of Gaussian Mixture Model (GMM) and Flow Matching (FM) approaches for root finding in the Peng-Robinson equation of state. (a) The PR-EOS cubic residual for propane at T = 300 K and P = 10 bar, showing the true function (black solid line) along with the learned fits from GMM (red dashed) and FM (blue dotted). Both generative models accurately capture the functional relationship between compressibility factor Z and the cubic residual. Green circles indicate the three analytical roots corresponding to liquid (\(Z_L\) = 0.049), unstable (\(Z_{unstable}\) = 0.161), and vapor (\(Z_V\) = 0.803) phases. (b) Distribution of roots obtained by conditioning each model on residual = 0. Both methods successfully identify all three roots, with the GMM producing slightly sharper distributions due to its analytical conditioning, while FM generates samples through numerical integration of the learned velocity field.}
+\caption{\label{fig:pr-roots}Comparison of Gaussian Mixture Model (GMM) and Flow Matching (FM) approaches for root finding in the Peng-Robinson equation of state. (a) The PR-EOS cubic residual for propane at T = 300 K and P = 10 bar, showing the true function (black solid line) along with the learned fits from GMM (red dashed) and FM (blue dotted). Both generative models accurately capture the functional relationship between compressibility factor Z and the cubic residual. Green circles indicate the three analytical roots corresponding to liquid (\(Z_L\) = 0.035), unstable (\(Z_{unstable}\) = 0.128), and vapor (\(Z_V\) = 0.815) phases. (b) Distribution of roots obtained by conditioning each model on residual = 0. Both methods successfully identify all three roots, with the GMM producing slightly sharper distributions due to its analytical conditioning, while FM generates samples through numerical integration of the learned velocity field.}
 \end{figure}
 
 \subsection{Optimization with generative models}
@@ -364,33 +364,45 @@ The equilibrium condition requires:
 K_{eq} = \frac{C_C^2}{C_A \cdot C_B} = \frac{(2\xi)^2}{(1-\xi)^2}
 \end{equation}
 
-Rearranging gives the equilibrium residual that must equal zero:
+Rearranging gives the equilibrium residual:
 
 \begin{equation}
-f(\xi) = K_{eq}(1-\xi)^2 - 4\xi^2 = 0
+f(\xi) = K_{eq}(1-\xi)^2 - 4\xi^2
 \end{equation}
 
-For \(K_{eq} = 1\), the analytical solution is \(\xi^* = 1/3\), giving equilibrium concentrations \(C_A = C_B = 2/3\) mol/L and \(C_C = 2/3\) mol/L. The physical constraint that concentrations must be non-negative requires \(0 < \xi < 1\).
+For \(K_{eq} = 1\), the analytical solution where \(f(\xi) = 0\) is \(\xi^* = 1/3\), giving equilibrium concentrations \(C_A = C_B = 2/3\) mol/L and \(C_C = 2/3\) mol/L. The physical constraint that concentrations must be non-negative requires \(0 < \xi < 1\).
 
-To solve this constrained root finding problem with a generative approach, we sample \(\xi\) values only within the feasible region \((0, 1)\) and compute the equilibrium residual \(f(\xi)\) for each sample. We train generative models on the joint distribution \([\xi, f(\xi)]\) and condition on \(f(\xi) = 0\) to find the equilibrium extent. The constraint is naturally enforced by the sampling domain. Both GMM and Flow Matching successfully identify \(\xi \approx 1/3\), as shown in Figure \ref{fig:equilibrium}.
+We formulate this as an optimization problem: minimize the squared residual \(f(\xi)^2\) subject to the inequality constraints \(\xi > 0\) and \(\xi < 1\). Using the barrier method, we define the augmented objective:
+
+\begin{equation}
+\phi(\xi) = f(\xi)^2 - \mu \log(\xi) - \mu \log(1-\xi)
+\end{equation}
+
+\noindent where \(\mu = 0.001\) is the barrier parameter. The logarithmic barrier terms become large as \(\xi\) approaches the constraint boundaries, keeping solutions in the feasible interior. At the optimum, \(\frac{d\phi}{d\xi} = 0\).
+
+To solve this with a generative approach, we sample \(\xi\) values in the feasible region \((0, 1)\), compute the barrier objective gradient \(\frac{d\phi}{d\xi}\) at each sample using automatic differentiation, train generative models on the joint distribution \([\xi, \frac{d\phi}{d\xi}]\), and condition on the gradient being zero to find the optimal extent. Both GMM and Flow Matching successfully identify \(\xi \approx 1/3\), as shown in Figure \ref{fig:equilibrium}.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=.9\linewidth]{./equilibrium_comparison.png}
-\caption{\label{fig:equilibrium}Reaction equilibrium \(A + B \rightleftharpoons 2C\) with physical constraints requiring non-negative concentrations. (a) The equilibrium residual \(f(\xi) = K_{eq}(1-\xi)^2 - 4\xi^2\), which equals zero at the equilibrium extent \(\xi^* = 1/3\). (b) Distributions of \(\xi\) values obtained by conditioning GMM (red) and Flow Matching (blue) on \(f(\xi) = 0\). Both methods successfully identify the analytical solution (black dashed line).}
+\caption{\label{fig:equilibrium}Reaction equilibrium \(A + B \rightleftharpoons 2C\) solved via barrier method optimization. (a) The gradient of the barrier objective \(\frac{d\phi}{d\xi}\), which equals zero at the equilibrium extent \(\xi^* = 1/3\). Training data points shown in light blue. (b) Distributions of \(\xi\) values obtained by conditioning GMM (red) and Flow Matching (blue) on \(\frac{d\phi}{d\xi} = 0\). Both methods successfully identify the analytical solution (black dashed line).}
 \end{figure}
 
-This example demonstrates that constrained root finding problems integrate naturally with the generative approach. By sampling only within the feasible region and conditioning on the function value being zero, we find physically meaningful solutions. This approach generalizes to more complex reaction networks where analytical solutions may not exist.
+This example demonstrates that inequality-constrained optimization problems can be solved with the generative approach using the barrier method. By incorporating logarithmic barrier terms and conditioning on the gradient of the augmented objective being zero, we find physically meaningful solutions while respecting the inequality constraints. This approach generalizes to more complex reaction networks and constraint sets.
 
 \subsection{Parameter estimation with generative models}
 
 Parameter estimation in regression is a kind of inverse problem. Usually we consider this in the context of optimization as finding a set of parameters (inputs) that minimize an objective function (outputs) of the errors between a model and observations. To recast this idea for a generative model, we consider the dataset as having columns of parameters (inputs) and observations (outputs). The observations could be derivatives of the objective function, and then one conditions on those being zero like we did before. We take an alternative approach here, and consider the observations to be some output of a model. Then, given an observation, we condition on that to obtain the parameters most consistent with that observation. This approach is fundamentally different than regression where parameters are estimated by minimizing some function of pooled errors.
 
-For a concrete example, we use a series reaction: A \(\rightarrow\) B \(\rightarrow\) C in a plug flow reactor. The observations we have will be the exit molar flow rates of A and B. We use a inlet molar flow, fixed volume and volumetric flow rate. The system is governed by these two differential equations:
+For a concrete example, we use a series reaction: A \(\rightarrow\) B \(\rightarrow\) C in a plug flow reactor. The observations we have will be the exit molar flow rates of A and B. We use an inlet molar flow, fixed volume and volumetric flow rate. The system is governed by these two differential equations:
 
-\(dF_a/dV = -k_1 F_a / \nu\)
+\begin{equation}
+\frac{dF_A}{dV} = -\frac{k_1 F_A}{\nu}
+\end{equation}
 
-\(dF_b/dV = k_1 F_a / \nu - k_2 F_b / \nu\)
+\begin{equation}
+\frac{dF_B}{dV} = \frac{k_1 F_A}{\nu} - \frac{k_2 F_B}{\nu}
+\end{equation}
 
 We sample a range of rate constants and compute the exit molar flows of A and B. This data set is what we will use to build a generative model next.  We generate samples of \(k_1, k_2\) in the range of 0.1..3. We can see what this data looks like in Figure \ref{fig-k1-k2-ca-cb}.
 
@@ -419,23 +431,26 @@ It is also possible to estimate an uncertainty of sorts. The distribution of the
 
 \subsection{Mapping input and output spaces  \label{mapping}}
 
-We previously developed a mapping approach based on differential equations  \cite{alves-2023}. We illustrate here that this can also be achieved by a generative model. We expand this idea to using a generative model here. The goal is to map a desired output space in the concentration of A, B from a CSTR to the input space of the radius of a CSTR, and the temperature (in units of \(RT\)) that achieves it. We have a design with fixed height, and we can modify the radius and temperature (via RT). There are two reactions: A \(\rightarrow\) B, that is second order in A, and A \(\rightarrow\) C, that is first order in A. We seek a design space with desired amounts of A and B in the exit. We choose a circular region in the output space, and map it to the input space.
+We previously developed a mapping approach based on differential equations  \cite{alves-2023}. We illustrate here that this can also be achieved by a generative model. We expand this idea to using a generative model here. The goal is to map a desired output space in the concentration of A, B from a CSTR to the input space of the radius of a CSTR, and the temperature (in units of \(RT\)) that achieves it. We have a design with fixed height, and we can modify the radius and temperature (via RT). There are two reactions: \(2A \rightarrow B\), which is second order in A, and \(B \rightarrow C\), which is first order in B. We seek a design space with desired amounts of A and B in the exit. We choose a circular region in the output space, and map it to the input space.
 
 Given a radius, we have \(V = \pi R^2 H\) and given an \(RT\) we have these rate constants for the two forward reactions: \(k_1 = \exp(-3 / RT)\), \(k_2 = \exp(-10 / RT)\).
 
 We start with a mole balance:
-
-\(0 = F_{A0} - F_A + r_A V\)
+\begin{equation}
+0 = F_{A0} - F_A + r_A V
+\end{equation}
 
 Some rearrangement leads to:
-
-\(0 = V k_1 C_A^2 + (v_0 + V k_2) C_A - F_{A0}\)
+\begin{equation}
+0 = V k_1 C_A^2 + (\nu_0 + V k_2) C_A - F_{A0}
+\end{equation}
 
 which we can solve with the quadratic equation to get \(C_A\) as a function of \((R, RT)\), and then from a mole balance on B, we get
+\begin{equation}
+C_B = k_1 C_A^2 V / \nu_0
+\end{equation}
 
-\(C_B = k_1 C_A^2 V / v_0\)
-
-Thus, we can analytically map the input space to the output space as shown in Figure \ref{fig-mapping}. We do this by brute force sampling here and show a how a circular region in the output space maps to the input space. We choose this example because it is easy to do this analytically, but this forward mapping can also be done in nonlinear programs.
+Thus, we can analytically map the input space to the output space as shown in Figure \ref{fig-mapping}. We do this by brute force sampling here and show how a circular region in the output space maps to the input space. We choose this example because it is easy to do this analytically, but this forward mapping can also be done in nonlinear programs.
 
 \begin{figure}[H]
 \centering
@@ -464,11 +479,13 @@ Nevertheless, this work shows that generative methods have enormous possibility 
 
 JRK acknowledges Carl Laird for suggesting the barrier function approach for problems with inequality constraints.
 
-\bibliography{manuscript}
+
 
 \section{Data Availability Statement}
 
 As Supporting Information we provide \url{https://github.com/KitchinHUB/generative-optimization} which contains extensive examples in the form of Jupyter notebooks for the GMM and flow-matching examples, and the notebooks that were used to generate the figures in this manuscript. In addition to the examples discussed in the manuscript there are additional examples on advanced optimization topics and visualization, the SKILL.md file for use with LLMs and automation tools for running the notebooks.
+
+\bibliography{manuscript}
 
 \begin{tocentry}
   \includegraphics[width=\textwidth]{toc.png}
