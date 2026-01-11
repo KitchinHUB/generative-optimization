@@ -12,6 +12,7 @@ https://github.com/KitchinHUB/generative-optimization
 * Tasks
 
 [[cite:&tedesco-2025-multis-pertur]]
+
 * TODO double check the octane example is described correctly like it is solved in the notebooks
 
 * TODO Check advanced examples and make sure they do what i want
@@ -32,4 +33,5 @@ CLOSED: [2025-12-18 Thu 07:37]
 * DONE Create a SKILL.md
 CLOSED: [2025-12-18 Thu 08:04]
 
-* TODO Make a last conversion of manuscript.org to tex and delete the org
+* DONE Make a last conversion of manuscript.org to tex and delete the org
+CLOSED: [2026-01-10 Sat 17:34]
