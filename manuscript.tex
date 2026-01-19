@@ -420,6 +420,103 @@ To solve this with a generative approach, we sample \(\xi\) values in the feasib
 
 This example demonstrates that inequality-constrained optimization problems can be solved with the generative approach using the barrier method. By incorporating logarithmic barrier terms and conditioning on the gradient of the augmented objective being zero, we find physically meaningful solutions while respecting the inequality constraints. This approach can also be generalized to more complex reaction networks and constraint sets.
 
+
+\subsection{Process flowsheet constrained optimization}
+
+A more complete and realistic case that is relevant to process systems engineering corresponds to flowsheet constrained optimization, which is More often than not, sensor data and/or plant measurements are recorded and stored in data historians, being particularly useful within distributed control system (DCS) architectures which are implemented seeking several objectives such as plantwide process control, fault diagnosis, hazardous and operability studies (HAZOP), real time optimization and process monitoring. This ever-increasing amount of data provides a clear opportunity to train generative models that can be used to pre-screen operating regions, including optimality driven ones. Such generative models can be used in parallel to the development of rigorous, first-principles-based process models, for instance. In summary, if process data is available, it is possible to use it to build generative joint probability distributions of  
+objective functions that can represent operating cost/profit of a given process, and process variables/constraints that may need to be imposed. Similar approaches have been developed in the context of reinforcement learning for bioprocess optimization \cite{Petsagkourakis2020}, using policy gradients.
+
+It is important to note that the constraints of a given process would be typically inherently represented in the historian data itself, since control structures and operators simultaneously and continuously maintain the process within the feasible region whenever possible. Furthermore, even if the historian data contains points outside the feasible region of operation, this data is equally important as they can bound the training data regime, reducing the possibility of extrapolation.
+
+As an example of a process flowsheet, we consider an evaporation process that has been used extensively in the plantwide control literature \cite{kariwala07,Alves2018} as a benchmark of self-optimizing control \cite{skogestad00,Jaschke2017} algorithms. The evaporation process is illustrated in Figure \ref{fig:evap_schematic}. The main goal of this process corresponds increase the concentration of some generic dilute liquor through the evaporation of a solvent from the feed, employing heat exchanger as depicted, and the description of each process variable is available on Table \ref{tab:evap_table}, based on the original source \cite{kariwala07}.
+
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.9\linewidth]{./evaporator_schematic.pdf}
+\caption{\label{fig:evap_schematic} Schematic of evaporation process.}
+\end{figure}
+
+
+\begin{table}[H]
+\centering
+\begin{tabular}{llll} 
+\hline
+\textbf{Variable} & \textbf{Description} & \textbf{Variable} & \textbf{Description} \\
+\hline
+$F_1$   & feed flow rate              & $L_2$   & separator level \\
+$F_2$   & product flow rate           & $P_2$   & operating pressure \\
+$F_3$   & circulating flow rate       & $F_{100}$ & steam flow rate \\
+$F_4$   & vapor flow rate             & $T_{100}$ & steam temperature \\
+$F_5$   & condensate flow rate        & $P_{100}$ & steam pressure \\
+$X_1$   & feed composition            & $Q_{100}$ & heat duty \\
+$X_2$   & product composition         & $F_{200}$ & cooling water flow rate \\
+$T_1$   & feed temperature            & $T_{200}$ & inlet temperature of cooling water \\
+$T_2$   & product temperature         & $T_{201}$ & outlet temperature of cooling water \\
+$T_3$   & vapor temperature           & $Q_{200}$ & condenser duty \\
+\hline
+\end{tabular}
+\caption{\label{tab:evap_table} Process variables and descriptions}
+\end{table}
+
+
+We follow the original source of the problem definition \cite{kariwala07}, in which $X_1=5\%$,$T_1=40^o C$,$T_{200}=25^o C$ are considered process disturbances at their nominal values. Furthermore, the process flow rates are in $kg/min$, temperatures in $^o C$, pressures in $kPa$, heat duties in $kW$ and compositions in percentages (e.g., $\%$). The constrained optimization problem posed corresponds to maximize the operational profit of this process as shown previously \cite{kariwala07}, subject to several process constraints. This leads to the optimization problem described in Eq. \ref{eq:evap_problem}, to be solved at steady-state.
+
+\begin{subequations}\label{eq:evap_problem}
+\begin{align}
+\min \quad 
+& 600F_{100} + 0.6F_{200} + 1.009\left(F_2+F_3\right) + 0.2F_1 - 4800F_2
+\label{eq:opt_obj}\\[4pt]
+\text{s.t.}\quad 
+& \frac{\mathrm{d}L_2}{\mathrm{d}t}=\frac{F_1-F_4-F_2}{20}
+\label{eq:opt_L2}\\
+& \frac{\mathrm{d}X_2}{\mathrm{d}t}=\frac{F_1X_1-F_2X_2}{20}
+\label{eq:opt_X2}\\
+& \frac{\mathrm{d}P_2}{\mathrm{d}t}=\frac{F_4-F_5}{4}
+\label{eq:opt_P2}\\
+& F_4=\frac{Q_{100}-0.07F_1\left(T_2-T_1\right)}{38.5}
+\label{eq:opt_F4}\\[2pt]
+& T_2=0.5616P_2+0.3126X_2+48.43
+\label{eq:opt_T2}\\
+& T_3=0.507P_2+55.0
+\label{eq:opt_T3}\\
+& T_{100}=0.1538P_{100}+90.0
+\label{eq:opt_T100}\\
+& Q_{100}=0.16\left(F_1+F_3\right)\left(T_{100}-T_2\right)
+\label{eq:opt_Q100}\\
+& F_{100}=\frac{Q_{100}}{36.6}
+\label{eq:opt_F100}\\
+& Q_{200}=\frac{0.9576F_{200}\left(T_3-T_{200}\right)}{0.14F_{200}+6.84}
+\label{eq:opt_Q200}\\
+& T_{201}=T_{200}+\frac{13.68\left(T_3-T_{200}\right)}{0.14F_{200}+6.84}
+\label{eq:opt_T201}\\
+& F_5=\frac{Q_{200}}{38.5}
+\label{eq:opt_F5}\\[4pt]
+& X_2 \ge 35.5\%
+\label{eq:opt_X2min}\\
+& 40~\mathrm{kPa}\le P_2 \le 80~\mathrm{kPa}
+\label{eq:opt_P2bounds}\\
+& P_{100}\le 400~\mathrm{kPa}
+\label{eq:opt_P100bound}\\
+& 0 \le F_{200}\le 400~\mathrm{kg/min}
+\label{eq:opt_F200bounds}\\
+& 0 \le F_1\le 20~\mathrm{kg/min}
+\label{eq:opt_F1bounds}\\
+& 0 \le F_3\le 100~\mathrm{kg/min}
+\label{eq:opt_F3bounds}
+\end{align}
+\end{subequations}
+
+The objective function comprises terms containing operating costs of water, steam and pumping \cite{kariwala07}, while the fourth and last terms correspond to raw material cost and product revenue, respectively. It is known \cite{kariwala07,Alves2018} that at under nominal disturbances, the optimal operation is constrained at $X_2 35.5\%$ and $P_{100} 400 kPa$, with an optimal economic operation of $\$582.233/h$. 
+
+We employ our proposed approach by generating synthetic data corrupted with pseudorandom noise, in order to mimic the presence of noise in real historian data, and we build a generative model of the joint probability distribution of the entire optimization space. This corresponds to using sensor data from the process measurements to evaluate the objective function and process constraints defined as in Eq. \ref{eq:evap_problem}.
+
+From a mathematical standpoint, we construct the joint probability distribution over all process variables $\boldsymbol{x}$, the equality constraint residuals $\boldsymbol{e}$, and the KKT stationarity residuals $\nabla_x L$. For the GMM approach, we learn $p(\boldsymbol{x}, \boldsymbol{e}, \nabla_x L)$ and condition on $[\boldsymbol{e} = \boldsymbol{0}, \nabla_x L = \boldsymbol{0}]$ to obtain candidate solutions satisfying both feasibility and first-order optimality; flow matching similarly generates $\boldsymbol{x}$ conditioned on full KKT residuals being zero. To generate realistic training data, we adopt an \emph{operating modes mixture} approach: Mode 1 ($\sim$60\%) solves barrier-augmented feasibility problems with widely varying constraints representing normal operations; Mode 2 ($\sim$30\%) solves actual cost minimization problems representing efficiency-focused periods, naturally producing points near constraint boundaries where optima lie; and Mode 3 ($\sim$10\%) explores tight constraint bands near target boundaries. This mixture ensures coverage of both diverse operating points and the optimal region.
+
+
+
+
+
 \subsection{Parameter estimation with generative models}
 
 Parameter estimation in regression is a class of inverse problem \cite{Aster2013}. Usually we consider this in the context of optimization as finding a set of parameters (inputs, or decision variables) that minimize an objective function (outputs) of the errors between a model and observations. To recast this idea for a generative model, we consider the dataset as having columns of parameters (inputs) and observations (outputs). The observations could be derivatives of the objective function, and the remaining task is, once again, to condition on those being zero as previously described. We take an alternative approach here, and consider the observations to be some output of a model. Hence, given an observation, we condition on that to obtain the parameters most consistent with that observation. This approach is fundamentally different from regression where parameters are estimated by minimizing some function of pooled errors.
