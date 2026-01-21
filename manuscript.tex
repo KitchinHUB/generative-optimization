@@ -613,7 +613,13 @@ There is a connection between the mapping of input and output spaces by differen
 
 \subsection{Limitations of generative optimization}
 
-The generative optimization approach fundamentally relies on the construction of a data-driven surrogate model, and the quality of the solutions relies on the quality of the surrogate model. Like other data-driven surrogate models, generative models are not reliable in extrapolation, or out-of-domain sampling. This can lead to erroneous or physically unrealistic results. In a related issue, if there are sharp changes in the true joint probability distribution that are not well sampled by the training data, it is unlikely these models ``learn'' about it, and they may miss these features. We reiterate that although the idea proposed in this work is novel and has potential to be ubiquitously applied in science and engineering applications, more work needs to be done on edge cases regarding data availability, hyperparameter tuning and generative model selection, for instance.
+The generative optimization approach fundamentally relies on the construction of a data-driven surrogate model, and the quality of the solutions relies on the quality of the surrogate model. Like other data-driven surrogate models, generative models are not reliable in extrapolation, or out-of-domain sampling. This can lead to erroneous or physically unrealistic results. In a related issue, if there are sharp changes in the true joint probability distribution that are not well sampled by the training data, it is unlikely these models ``learn'' about it, and they may miss these features. 
+
+Issues related to dimensionality also need to be addressed. We anticipate that with an increased number of dimensions, numerical instability, curse of dimensionality and training times could become larger problems that were not currently found in the extensive case studies. Furthermore, domain knowledge is still necessary regarding active constraint regions to properly handle inequalities, which is done naturally in mathematical programming formulations. Lastly, the hyperparameter tuning and model selection problems are still present, a reality of any machine learning formulation.
+
+
+
+We reiterate that although the idea proposed in this work is novel and has potential to be ubiquitously applied in science and engineering applications, more work needs to be done on edge cases regarding data availability, hyperparameter tuning and generative model selection, for instance.
 
 \section{Conclusions} \label{sec:conclusions}
 
@@ -629,7 +635,7 @@ Nevertheless, this work shows that generative methods have enormous possibility 
 
 \section{Acknowledgments}
 
-JRK acknowledges Carl Laird for suggesting the barrier function approach for problems with inequality constraints.
+JRK acknowledges Prof. Carl D. Laird for suggesting the barrier function approach for problems with inequality constraints.
 
 
 
