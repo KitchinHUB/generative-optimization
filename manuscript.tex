@@ -7,9 +7,7 @@
 
 \usepackage[version=3]{mhchem}
 \usepackage{natmove}
-% \usepackage{url}
 \usepackage{xurl}
-
 
 \usepackage[strings]{underscore}
 \usepackage[linktocpage,pdfstartview=FitH,colorlinks,
@@ -25,42 +23,41 @@ citecolor=blue,filecolor=blue,menucolor=blue,urlcolor=blue]{hyperref}
 \email{jkitchin@andrew.cmu.edu}
 
 \title{Generative machine learning approaches to optimization}
+
 \begin{document}
 
 \maketitle
 
-
 \begin{abstract}
-We present a generative machine learning approach to optimization problems. The key idea is that generative models can learn the joint probability distribution of variables and their derivatives, or transform simple distributions to target distributions. By conditioning on desired properties (e.g., derivatives equal to zero), solutions are obtained by sampling. We demonstrate this using Gaussian mixture models, which approximate joint distributions, and conditional flow matching, which learns distribution transformations. Examples include root finding, unconstrained and constrained optimization, parameter estimation, and space mapping. This pedagogical work shows that generative models offer a fundamentally different approach to optimization, one that is data-driven, does not require iterative solvers, and naturally handles problems with multiple solutions by representing the full solution distribution. We discuss limitations and conclude the approach shows promise as an alternative to conventional methods.
+We present a generative machine learning approach to optimization problems. The key idea is that generative models can learn the joint probability distribution of variables and their derivatives, or transform simple distributions to target distributions. By conditioning on desired properties (e.g., derivatives equal to zero), solutions are obtained by sampling. We demonstrate this using Gaussian mixture models, which approximate joint distributions, and conditional flow matching, which learns distribution transformations. Examples include root finding, unconstrained and constrained optimization, parameter estimation, and state space mapping. This pedagogical work shows that generative models offer a fundamentally different approach to optimization, one that is data-driven, does not require iterative solvers, and naturally handles problems with multiple solutions by representing the full solution distribution. We discuss limitations and conclude the approach shows promise as an alternative to conventional methods.
 \end{abstract}
 
 \section{Introduction}
 
+The field of optimization is immense, with elegant solutions tailored to specific problem applications, depending on the nature of the objective function and constraints that are to be solved (e.g., linear \emph{vs.} nonlinear, convex \emph{vs.} nonconvex, differentiable \emph{vs.} nondifferentiable), the nature of the variables involved in the optimization problem (discrete, continuous, or both), and lastly, the nature of the solution itself, global \emph{vs.} local optimization. This myriad of problems that arise in many fields of science and engineering has led to the development of numerous solution techniques, ranging from the initial work of linear programming and the Simplex method by Dantzig \cite{dantzig1990origins}, to the advent of robust nonlinear programming techniques including sequential quadratic programming (SQP) \cite{Han1977,powell_sqp_1978,Wilson1963Simplicial}, and the popularization of interior-point methods \cite{wachter2006implementation}. Additionally, solutions of mixed integer nonlinear programming (MINLP) algorithms \cite{bonami2008} and recent innovations on generalized disjunctive programming (GDP) which embeds logical decisions into mathematical programming formulations \cite{grossmann_gdp}, and global optimization \cite{FLOUDAS20051185,Floudas2009,BOUKOUVALA2016701} are all examples of how rich and deep the literature on the topic is. Among popular programming languages implementations of such algorithms, in Python the \texttt{scipy} library is particularly notable \cite{virtanen-2020-scipy}, as well as the \texttt{Pyomo} \cite{bynum-2021-pyomo-optim} framework, GEKKO \cite{beal-2018-gekko-optim-suite}, Gurobi \cite{gurobi}, Mosek \cite{Andersen2000}, and in Julia there is JuMP \cite{dunning-2017-jump}. These libraries include both algebraic optimization modeling languages and commercial and/or open-source optimization solvers. Despite all the work aforementioned, the list is by no means exhaustive, and many other interesting research directions are currently available and being actively developed.
 
-The field of optimization is immense, with elegant solutions tailored to specific problem applications, depending on the nature of the objective function and constraints that are to be solved (e.g., linear \emph{vs.} nonlinear, convex \emph{vs.} nonconvex, differentiable \emph{vs.} nondifferentiable), the nature of the variables involved in the optimization problem (discrete, continuous, or both), and lastly, the nature of the solution itself, global \emph{vs.} local optimization. This myriad of problems that arise in many fields of science and engineering has led to the development of numerous solution techniques, ranging from the seminal work of linear programming and the Simplex method by Dantzig \cite{dantzig1990origins}, to the advent of robust nonlinear programming techniques including sequential quadratic programming (SQP) \cite{Han1977,powell_sqp_1978,Wilson1963Simplicial}, and the popularization of interior-point methods \cite{wachter2006implementation}. Additionally, solutions of mixed integer nonlinear programming (MINLP) algorithms \cite{bonami2008} and recent innovations on generalized disjunctive programming (GDP) which embeds logical decisions into mathematical programming formulations \cite{grossmann_gdp}, and global optimization \cite{FLOUDAS20051185,Floudas2009,BOUKOUVALA2016701} are all examples of how rich is the literature on the topic. Among popular programming languages implementations of such algorithms, in Python the \texttt{scipy} library is particularly notable \cite{virtanen-2020-scipy}, as well as the \texttt{Pyomo} \cite{bynum-2021-pyomo-optim} framework, GEKKO \cite{beal-2018-gekko-optim-suite}, Gurobi \cite{gurobi}, Mosek \cite{Andersen2000}, and JuMP \cite{dunning-2017-jump}. These libraries include both algebraic optimization modeling languages as well as commercial and/or open-source optimization solvers. Despite all the work aforementioned, the list is by no means exhaustive, and many other interesting research directions are currently available and being actively developed.
+We see a particular interest in algorithmic development of solutions to optimization problems that are specific to the nature of the problem, its variables and local/optimal convergence criteria. However, less attention has been given to the use of emerging and powerful tools such as generative machine learning (genML) in the well-developed area of optimization. It is clear that optimization/mathematical programming is one of the cornerstones of machine learning (independent of the generative nature or lack thereof), but the reverse application, that is, genML as a tool to solve optimization problems, has been less unexplored.
 
-We see a particular interest in algorithmic development of solutions to optimization problems that are specific to the nature of the problem, its variables and local/optimal convergence criteria. However, less attention has been given to the use of emerging and powerful tools such as generative machine learning (genML) in the well-developed area of optimization. It is clear that optimization/mathematical programming is one of the cornerstones of machine learning (independent of the generative nature or lack thereof), but the reverse application, that is, genML as a tool to solve optimization problems, seems to be largely unexplored.
-
-To orient the reader on where a generative-based optimization approach fits in the optimization landscape, we illustrate genML-opt in Figure \ref{fig:opt_flowchart}, based on the classification of optimization problems in Ref. \citenum{biegler2004_retrospective}. We intentionally modified the original flowchart in Refs. \citenum{biegler2004_retrospective,neos_optimization_types}  to show which class of problems we are able to currently employ genML-opt. Although promising, there is still a lot to cover when compared to the current state-of-the-art in optimization.
+To orient the reader on where a generative-based optimization approach fits in the optimization landscape, we illustrate genML-optimization in Figure \ref{fig:opt_flowchart}, based on the classification of optimization problems in Ref. \citenum{biegler2004_retrospective}. We intentionally modified the original flowchart in Refs. \citenum{biegler2004_retrospective} and \citenum{neos_optimization_types} to show which problems we are able to currently employ genML-optimization on. Although promising, there is still a lot to cover when compared to the current state-of-the-art in optimization.
 
 \begin{figure}[htbp]
 \centering
 \includegraphics[width=.9\linewidth]{./optimization_flowchart.pdf}
-\caption{\label{fig:opt_flowchart}Tree containing classes of optimization problems, based on flowcharts available in the literature \cite{biegler2004_retrospective,neos_optimization_types}. We show with connected dashed lines and also highlighting classes of optimization problems that we were able to currently solve using generative machine learning applied to optimization - GenML-opt.}
+\caption{\label{fig:opt_flowchart}Tree containing classes of optimization problems, based on flowcharts available in the literature \cite{biegler2004_retrospective,neos_optimization_types}. We show with connected dashed lines and also highlighting classes of optimization problems that we were able to currently solve using generative machine learning applied to optimization - genML-opt.}
 \end{figure}
 
 In this manuscript we explore a different way to think about optimization through generative machine learning (genML) \cite{gm-2020-compr-survey}. The basic concept in genML is that if one knows the joint probability distribution of a set of variables, then it is possible to generate samples of that distribution. Alternatively, if one knows how to transform a reference distribution to the joint probability distribution of those variables, then one samples the reference distribution and transforms it to a sample of the desired distribution.
 
-In fact, generative models have been applied to optimization problems before. Invertible neural networks are a special class of models that are used to model the joint distribution of inputs and outputs \cite{ardizzone-2019-analy-inver}. Once they are trained, feasible solutions can be found by sampling them. Diffusion models have been applied to inverse problems in mechanics \cite{dasgupta-2025-condit-score}. We recently applied genML to solve an inverse linear problem \cite{kitchin-2025-solvin}. Generative models can also be used to enhance combinatorial optimization problems \cite{alcazar-2024-enhan-combin} where they can be used to generate near-optimal solutions that are subsequently refined by conventional algorithms. Finally, generative adversarial models have been used in optimization \cite{yao-2024-gener-adver}.
+In fact, generative models have been applied to optimization problems before. Invertible neural networks are a special class of models that are used to model the joint distribution of inputs and outputs \cite{ardizzone-2019-analy-inver}. Once they are trained, feasible solutions can be found by sampling them. Diffusion models have been applied to inverse problems in mechanics \cite{dasgupta-2025-condit-score}. We recently applied genML to solve an inverse linear problem \cite{kitchin-2025-solvin}. Generative models can also be used to enhance combinatorial optimization problems \cite{alcazar-2024-enhan-combin} where they can be used to generate near-optimal solutions that are subsequently refined by conventional algorithms. There are applications of generative machine learning models to dynamic systems forecasting \cite{wyrod2025generativeforecastingjointprobability} and for generating potential pre-screened solutions of multi-objective mathematical programs \cite{paulson2026}. Finally, generative adversarial models have been used in optimization \cite{yao-2024-gener-adver}.
 
 Probably the most common genML method used today is in the generation of text \cite{becker-2024-text-gener} and images \cite{elasri-2022-image-gener}. Large language models (LLMs) are a form of genML where the most likely sequence of words to follow a prompt is generated. LLMs are not the focus of this work. In image generation, a genML model is trained on a large set of images to ``learn the image distribution'', and then images are generated by sampling that distribution. We find it helpful to think of an image first as a matrix of pixel values (e.g. the RGB intensities), and then to think of that matrix as a flattened vector. Then, a large set of images will have a distribution of values in that vector space where there are correlations (covariance) between the elements of the vector that define an image space. Thus, one generates a sample vector, and then reshapes it into a matrix, which can be visualized as an image.  This is the motivation for the present work.
 
-However, this approach may not seem immediately helpful in solving optimization problems until two facts are stated:
+This approach may not seem immediately helpful in solving optimization problems until we make these observations:
 
 
 \begin{enumerate}
-  \item \textbf{Instead of a collection of pixel values, the vector elements can be inputs and outputs of a model or system.} By concatenating those we obtain a vector analogous to the flattened image vector. The vector elements can  include derivatives of the model, or other easily derived features if desired. If there is a large number of such vectors, then they will form a distribution in that vector space where there are correlations (covariance) between the elements, e.g. the inputs and outputs. Since it is evident generative models can learn that distribution for images, it seems reasonable they could learn this distribution for inputs/outputs, which we demonstrate in this work. Thus, if we can learn or estimate the joint probability distribution, we can generate samples of inputs and outputs from it. 
-  \item \textbf{We must introduce the idea of conditional generation.} That is, we can specify certain values of the variables, update the joint probability distribution of the remaining variables, and then generate those variables consistent with a desired condition. Thus, if we condition on inputs, we can then generate samples of the output, and vice versa. This is directly related to root finding; we might condition on the output being zero, and generate the inputs that lead to that result.
+  \item \textbf{Instead of a collection of pixel values, the vector elements can be inputs and outputs of a model or system.} By concatenating those we obtain a vector analogous to the flattened image vector. The vector elements can  include derivatives of the model, or other easily derived features if desired. If there are many such vectors, then they will form a distribution in that vector space where there are correlations (covariance) between the elements, e.g. the inputs and outputs. Since it is evident generative models can learn that distribution for images, it seems reasonable they could learn this distribution for inputs/outputs, which we demonstrate in this work. Thus, if we can learn or estimate the joint probability distribution, we can generate samples of inputs and outputs from it. 
+  \item \textbf{Generation of these vectors can be conditional.} That is, we can specify certain values of the variables, update the joint probability distribution of the remaining variables, and then generate those variables consistent with a desired condition. Thus, if we condition on inputs, we can then generate samples of the output, and vice versa. This is directly related to root finding; we might condition on the output being zero, and generate the inputs that lead to that result.
 \end{enumerate}
 
 
@@ -72,20 +69,20 @@ The Bayesian statistical approach to inverse problems, as described by Waqar et 
 
 We argue that this approach is fundamentally different from a conventional view point in the mathematical programming and engineering research communities. In our proposed work, there may be a model involved, however this is not strictly necessary; the approach can be completely data-driven in some cases as previously stated. This feature can be particularly useful in our own field (e.g., chemical engineering) in which sensor data can be available, but a first principles model may not be fully developed. In this case, the joint probability distribution among sensor data may still be inferred by employing our proposed approach and the optimal solution landscape can be pre-screened while a fundamental/first principles model is being developed. Furthermore, if a rigorous model based on first principles is developed, our approach can help generate potentially feasible solutions that can be employed in a rigorous mathematical program. 
 
-Additionally, we do not necessarily need to think about a forward or inverse model as is typically done in engineering applications. Instead, the joint probability distribution (or the transformation function) is simultaneously both of these, and conditioning determines what direction that one may desire, even if it is a ``mixed mapping direction'' (e.g., it is entirely possible to condition on some of the inputs and some outputs). The practical implication of the proposed approach is that one is able to generate solutions to optimization problems without using conventional approaches such as Newton-Raphson iterative methods, or other specialized algorithms like simplex methods to solve nonlinear programs. 
+Additionally, we do not need to think about a forward or inverse model as is typically done in engineering applications. Instead, the joint probability distribution (or the transformation function) is simultaneously both of these, and conditioning determines what direction that one may desire, even if it is a ``mixed mapping direction'' (e.g., it is entirely possible to condition on some inputs and some outputs). The practical implication of the proposed approach is that one is able to generate solutions to optimization problems without using conventional approaches such as Newton-Raphson iterative methods, or other specialized algorithms like simplex methods to solve nonlinear programs. 
 
+Summarizing, genML has the potential to serve as an alternative optimization solution approach to several classes of problems listed above, including linear and nonlinear programming (both constrained and unconstrained), parameter estimation problems, inverse mapping, and root finding. Intriguingly, we have observed that the solution approach to these types of problems is remarkably consistent, as opposed to highly-tailored and specific algorithms (the current \textit{status quo}) as long as data is available. 
 
+We do not anticipate that generative machine learning formulations will replace classic mathematical programming development. Instead, we believe that a branch of optimization problems that can be solved by using genML will employ even more sophisticated optimization algorithms at the training and inference of generative models. In short, the optimization layer will always be present, and its interaction with the researcher/practitioner will be what might change within the next years. 
 
-Summarizing, GenML has the potential to serve as an alternative optimization solution approach to several classes of problems listed above, including linear and nonlinear programming (both constrained and unconstrained), parameter estimation problems, inverse mapping, and root finding, to name a few. Intriguingly, we have observed that the solution approach to these types of problems is remarkably consistent, as opposed to highly-tailored and specific algorithms (the current \textit{status quo}) as long as data is available. We do not anticipate that generative machine learning formulations will replace classic mathematical programming development. Instead, we believe that a branch of optimization problems that can be solved by using GenML will employ even more sophisticated optimization algorithms at the training and inference of generative models. In short, the optimization layer will always be present, and its interaction with the researcher/practitioner will be what might change within the next years. Since the introduction of such ideas in our pre-print version of this work, applications of generative machine learning models to dynamic systems forecasting \cite{wyrod2025generativeforecastingjointprobability} and for generating potential pre-screened solutions of multiobjective mathematical programs \cite{paulson2026}.
-
-Lastly, it is essential to note that we make no claims of superiority of generative methods over the well-established mathematical programming-based solution methods; indeed, quite the contrary. Conventional algorithms offer many advantages to the ideas presented here. Instead, we focus on developing a proof of concept for a new way to think about solving these problems. We do this through a series of examples that span root finding, minimization including constraints, parameter estimation, and state mapping, as shown in Section \ref{sec:results}. The remainder of this paper is structured as follows: in Section \ref{sec:methods} the methods employed in this work are presented, including an introduction of Gaussian mixture models and conditional normalizing flow matching techniques. Furthermore, we also disclose the use of generative artificial intelligence model in this work. In Section \ref{sec:results} several case studies are presented to show the potential of the ideas here presented. Lastly, in \ref{sec:conclusions} we discuss final conclusions and bring ideas about potential future work on this field, as we anticipate that it is an emerging one.
+Lastly, it is essential to note that we make no claims of superiority of generative methods over the well-established mathematical programming-based solution methods; indeed, quite the contrary. Conventional algorithms offer many advantages to the ideas presented here. Instead, we focus on developing a proof of concept for a new way to think about solving these problems. We do this through a series of examples that span root finding, minimization including constraints, parameter estimation, and state mapping, as shown in Section \ref{sec:results}. The remainder of this paper is structured as follows: in Section \ref{sec:methods} the methods employed in this work are presented, including an introduction of Gaussian mixture models and conditional normalizing flow matching techniques. In Section \ref{sec:results} several case studies are presented to show the potential of the ideas here presented. Lastly, in Section \ref{sec:conclusions} we discuss final conclusions and bring ideas about potential future work on this field, as we anticipate that it is an emerging one.
 
 
 \section{Methods} \label{sec:methods}
 
 \subsection{Gaussian mixture models}
 
-Gaussian Mixture Models (GMMs) are a powerful and versatile mathematical tool that is able to characterize complex and multimodal distributions by combining multiple individual Gaussians. They are mostly used in machine learning applications related but not limited to data clustering \cite{Yang_2019_ICCV,viroli_deep_2019}, as well as being recognized in the literature to pattern recognition in machine learning \cite{bishop2006pattern} applications. Additionally, in the field of robotics, Gaussian Mixture Regression (GMR) has been used as a generative modeling framework  \cite{Fabisch2021}, and it is considered a generative model \cite{deisenroth2020mathematicsML} itself. We follow the notation from Ref \citenum{Fabisch2021} for the mathematical definition of GMMs. However, the reader should note that equally valid formulations are present in the literature \cite{deisenroth2020mathematicsML,bishop2006pattern}.
+Gaussian Mixture Models (GMMs) are a powerful and versatile mathematical tool that is able to characterize complex and multimodal distributions by combining multiple individual Gaussian functions. They are mostly used in machine learning applications related but not limited to data clustering \cite{Yang_2019_ICCV,viroli_deep_2019}, as well as being recognized in the literature to pattern recognition in machine learning \cite{bishop2006pattern} applications. Additionally, in the field of robotics, Gaussian Mixture Regression (GMR) has been used as a generative modeling framework  \cite{Fabisch2021}, and it is considered a generative model \cite{deisenroth2020mathematicsML} itself. We follow the notation from Ref \citenum{Fabisch2021} for the mathematical definition of GMMs. However, the reader should note that equally valid formulations are present in the literature \cite{deisenroth2020mathematicsML,bishop2006pattern}.
 
 From a machine learning standpoint, the main task is, given a pair of vectors \(x\) and \(y\), to learn a probability distribution as defined as in Eq. \ref{eq:GMM_01}, which is the definition of a Gaussian mixture model.
 
@@ -97,7 +94,7 @@ p(\boldsymbol{x}, \boldsymbol{y})=\sum_{k=1}^K \pi_k \mathcal{N}_k\left(\boldsym
 
 \subsubsection{Training}
 
-The training step corresponds to obtaining an accurate prediction of this unknown, probably multimodal and multivariable probability distribution, given a dataset defined by the pair of vectors \(x,y\). For simplicity, we can lump the parameters related to the formulation of Eq. \ref{eq:GMM_01} which includes the means, covariances and mixture weights defined as \(\theta := \left\{\pi_k, \boldsymbol{\mu}_{\boldsymbol{x} \boldsymbol{y}_k}, \boldsymbol{\Sigma}_{\boldsymbol{x} \boldsymbol{y}_k}: k=1, \ldots, K\right\}\).
+The training step corresponds to obtaining an accurate prediction of this unknown, probably multimodal and multivariable probability distribution, given a dataset defined by the pair of vectors \(x, y\). For simplicity, we can lump the parameters related to the formulation of Eq. \ref{eq:GMM_01} which includes the means, covariances and mixture weights defined as \(\theta := \left\{\pi_k, \boldsymbol{\mu}_{\boldsymbol{x} \boldsymbol{y}_k}, \boldsymbol{\Sigma}_{\boldsymbol{x} \boldsymbol{y}_k}: k=1, \ldots, K\right\}\).
 
 As a figure of merit is needed to fit this generative machine learning model, we resort to a likelihood formulation, defined as in Eq. \ref{eq:logLL}.
 
@@ -105,13 +102,12 @@ As a figure of merit is needed to fit this generative machine learning model, we
 p(x,y \mid \boldsymbol{\theta})=\prod_{n=1}^N p\left(x_n,y_n \mid \boldsymbol{\theta}\right), \quad p\left(x_n,y_n \mid \boldsymbol{\theta}\right)=\sum_{k=1}^K \pi_k \mathcal{N}\left(x,y \mid \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k\right)
 \end{equation}
 
-The log-likelihood \cite{deisenroth2020mathematicsML} is formulated in Eq. \ref{eq:logLL_2}. Ideally, one could solve for \(\mathrm{d} \mathcal{L} / \mathrm{d} \boldsymbol{\theta} = 0\) and the optimal parameters \(\theta^*\) that maximizes the likelihood would be obtained analytically. However, since Eq. \ref{eq:logLL_2} is not a closed-form expression/solution \cite{deisenroth2020mathematicsML}, an iterative method is used. Expectation Maximization (EM) is applied in GMMs sucessfully and this is what packages such as \texttt{gmr} \cite{Fabisch2021} and the scikit-learn \cite{scikit-learn} implementation of GMM does.
+The log-likelihood \cite{deisenroth2020mathematicsML} is formulated in Eq. \ref{eq:logLL_2}. Ideally, one could solve for \(\mathrm{d} \mathcal{L} / \mathrm{d} \boldsymbol{\theta} = 0\) and the optimal parameters \(\theta^*\) that maximizes the likelihood would be obtained analytically. However, since Eq. \ref{eq:logLL_2} is not a closed-form expression/solution \cite{deisenroth2020mathematicsML}, an iterative method is used. Expectation Maximization (EM) is applied in GMMs successfully and this is what packages such as \texttt{gmr} \cite{Fabisch2021} and the scikit-learn \cite{scikit-learn} implementation of GMM does.
 
 \begin{equation} \label{eq:logLL_2}
 \log p(\boldsymbol{x,y} \mid \boldsymbol{\theta})=\sum_{n=1}^N \log p\left(\boldsymbol{x}_n \mid \boldsymbol{\theta}\right)=\underbrace{\sum_{n=1}^N \log \sum_{k=1}^K \pi_k \mathcal{N}\left(\boldsymbol{x}_n \mid \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k\right)}_{=: \mathcal{L}}
 \end{equation}
 \subsubsection{Prediction}
-\label{sec:orgef10aa9}
 
 Following the conditional distribution property of each individual Gaussian, one is able to compute the conditional distribution \(p(y \mid x,\theta)\) by first writing down the conditional distribution for a given \(k^{th}\) element \cite{Fabisch2021}.
 
@@ -129,7 +125,7 @@ Following the conditional distribution property of each individual Gaussian, one
 \end{bmatrix}
 \end{equation}
 
-\noindent The conditional distribution of \(\boldsymbol{y}\) given \(\boldsymbol{x}\) for the \(k^{th}\) Gaussian component is defined as in Eq.\ref{eq:GMM_cond_01}:
+\noindent The conditional distribution of \(\boldsymbol{y}\) given \(\boldsymbol{x}\) for the \(k^{th}\) Gaussian component is defined as in Eq. \ref{eq:GMM_cond_01}:
 
 \begin{equation} \label{eq:GMM_cond_01}
 \begin{aligned}
@@ -164,15 +160,15 @@ p(\boldsymbol{y} \mid \boldsymbol{x}; \theta) = \sum_{k=1}^K \pi_{k \mid \boldsy
 \end{equation}
 
 
-Eq. \ref{eq:GMM_predict_compact} plays a major role in our work. As we draw samples based on conditioning, we can simultaneously infer in variables that belong to both the \(x\) or \(y\) spaces, usually perceived as inputs and ouputs, respectively. We show this in several applications related to optimization.
+Eq. \ref{eq:GMM_predict_compact} plays a major role in our work. As we draw samples based on conditioning, we can simultaneously infer in variables that belong to both the \(x\) or \(y\) spaces, usually perceived as inputs and outputs, respectively. We show this in several applications related to optimization.
 
-Lastly, we note that typical optimization techniques are used, more specifically during the training step of the generative approach, namely the expectation maximization (EM) algorithm \cite{nips1993_EM}. However, this optimization step that requires \(\mathcal{O}(\mathcal{D}^3)\) for a dataset of dimensionality \(\mathcal{D}\), is performed offline and separately from the applications in which the GM model is employed.
+Lastly, we note that typical optimization techniques are used, more specifically during the training step of the generative approach, namely the expectation maximization (EM) algorithm \cite{nips1993_EM}. However, this optimization step that requires \(\mathcal{O}(\mathcal{D}^3)\) for a dataset of dimensionality \(\mathcal{D}\), is performed offline and separately from the applications in which the GMM is employed.
 
 \subsection{Conditional normalizing flow matching}
 
 Flow matching is a simulation-free approach to training continuous normalizing flows \cite{lipman2023flow}. Unlike traditional normalizing flows that require computing expensive Jacobian determinants, flow matching learns a time-dependent vector field \(v_t(x)\) that transforms samples from a simple base distribution \(p_0\) (typically \(\mathcal{N}(0, I)\)) to a target data distribution \(p_1\) through ordinary differential equations (ODEs).
 
-Given a data sample \(x_1 \sim p_1(x)\) and a base sample \(x_0 \sim p_0(x)\), we construct a probability path \(p_t(x)\) for \(t \in [0,1]\) that interpolates between the two distributions. A common choice is the conditional Gaussian path:
+Given a data sample \(x_1 \sim p_1(x)\) and a base sample \(x_0 \sim p_0(x)\), we construct a probability path \(p_t(x)\) for \(t \in [0, 1]\) that interpolates between the two distributions. A common choice is the conditional Gaussian path:
 \begin{equation}
 p_t(x | x_1) = \mathcal{N}(x | t x_1, (1-(1-\sigma)t)^2 I)
 \end{equation}
@@ -218,17 +214,13 @@ We note this here for two reasons. First is transparency. Second, we want to hig
 
 \subsection{Basic concepts of generative modeling}
 
-
-
-In generative modeling there are mainly two options. The first is to develop a model of the joint probability distribution between inputs \(x\) and outputs \(y\), and conditionally generate samples, e.g. at fixed \(x\) or fixed \(y\) by updating the joint probability to reflect the residual degrees of freedom. The Gaussian Mixture Model is a generative model that falls into this category, in which analytical formulas to update the probabilities are readily available. We illustrate this conceptually below in Figure \ref{fig-gmm}.
+In generative modeling there are mainly two options to build data-driven models. The first is to develop a model of the joint probability distribution between inputs \(x\) and outputs \(y\), and conditionally generate samples, e.g. at fixed \(x\) or fixed \(y\) by updating the joint probability to reflect the residual degrees of freedom. The Gaussian Mixture Model is a generative model that falls into this category, in which analytical formulas to update the probabilities are readily available. We illustrate this conceptually below in Figure \ref{fig-gmm}.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=1.0\linewidth]{./fig_gmm_example.png}
-\caption{\label{fig-gmm}GMM fit for \(y = |x|\) with missing data in the region \(-0.5 \leq x \leq 0.5\). The central panel shows the data (blue points), true function (red dashed), GMM fit \(E[y|x]\) (blue solid line), and GMM density contours (green). The marginal distributions \(P(x)\) (top) and \(P(y)\) (right) show the overall data distribution. The bottom panel shows the conditional distribution \(P(x|y=0.75)\), which is bimodal with modes at \(x \approx \pm 0.75\), demonstrating GMM's ability to capture multi-modal inverse solutions despite missing data.}
+\caption{\label{fig-gmm}GMM fit for \(y = |x|\) with missing data in the region \(-0.5 \leq x \leq 0.5\). The central panel shows the data (blue points), true function (red dashed), GMM fit \(E[y|x]\) (blue solid line), and GMM density contours (green). The marginal distributions \(P(x)\) (top) and \(P(y)\) (right) show the overall data distribution. The bottom panel shows the conditional distribution \(P(x|y=0.75)\), which is bimodal with modes at \(x \approx \pm 0.75\), demonstrating the GMM's ability to capture multi-modal inverse solutions despite missing data.}
 \end{figure}
-
-
 
 The second approach corresponds to the use of conditional flow matching techniques. Instead of updating the joint probability distributions these models learn a conditional velocity field that transforms one distribution (often a simple normal distribution) into the target distribution. We show a result for this below in Figure \ref{fig-fm} for the same problem we solved above with the GMM.
 
@@ -236,24 +228,21 @@ The second approach corresponds to the use of conditional flow matching techniqu
 \centering
 \includegraphics[width=1.0\linewidth]{./fig_fm_example.png}
 \caption{\label{fig-fm}Flow Matching trajectories for \(y = |x|\) with missing data. Left panel shows the initial noise distribution \(N(0,1)\) at \(t=0\). Center panel shows 20 trajectories evolving from noise to data, conditioned on \(y=0.75\), with gray arrows indicating the learned velocity field \(v(x,t,y=0.75)\). Right panel shows the final conditional distribution \(P(x|y=0.75)\) at \(t=1\), which is bimodal with modes at \(x \approx \pm 0.75\), matching the true inverse solutions. Flow Matching learns to transform a simple Gaussian into a complex bimodal distribution conditioned on the target value.}
+\end{figure}
 
 In the next subsections we illustrate several examples related to chemical engineering that can employ the ideas proposed in this work.
 
-\end{figure}
+\subsection{Root finding \label{sec-root-finding}}
 
-\subsection{Root finding  \label{sec-root-finding}}
+In root finding we seek values of \(x\) where \(f(x) = 0\), including both scalar and vector-valued functions and input vectors. Traditional approaches include bisection (scalar functions), Newton-Raphson and related methods (both scalar and vector-value functions). Here we demonstrate a generative approach in which we learn the joint distribution \(p(x, f(x))\) and then condition on \(f(x) = 0\) to generate samples of the roots.
 
-In root finding we seek values of \(x\) where \(f(x) = 0\), including both scalar and vector-valued functions and input vectors. Traditional approaches include bisection (scalar functions), Newton-Raphson-type methods (both scalar and vector-value functions). Here we demonstrate a generative approach in which we learn the joint distribution \(p(x, f(x))\) and then condition on \(f(x) = 0\) to generate samples of the roots.
-
-A practically relevant example is finding compressibility factors from the Peng-Robinson equation of state (PR-EOS), widely used in chemical engineering for vapor-liquid equilibrium calculations. In compressibility factor form, the PR-EOS is a cubic equation as shown in Eq.\ref{eq:preos_01}.
+A practically relevant example is finding compressibility factors from the Peng-Robinson equation of state (PR-EOS), widely used in chemical engineering for vapor-liquid equilibrium calculations. In compressibility factor form, the PR-EOS is a cubic equation as shown in Eq. \ref{eq:preos_01}.
 
 \begin{equation} \label{eq:preos_01}
 Z^3 - (1-B)Z^2 + (A - 3B^2 - 2B)Z - (AB - B^2 - B^3) = 0
 \end{equation}
 
 \noindent where \(A = aP/(R^2T^2)\) and \(B = bP/(RT)\) are dimensionless parameters computed from the substance's critical properties. In the two-phase region, this cubic has three real roots: the liquid compressibility factor \(Z_L\), an unstable intermediate root, and the vapor compressibility factor \(Z_V\). For propane at \(T = 300\) K and \(P = 10\) bar (in the two-phase region), we generate training data by evaluating the cubic residual \(r(Z) = Z^3 - (1-B)Z^2 + (A - 3B^2 - 2B)Z - (AB - B^2 - B^3)\) over the reasonable domain \(Z \in [0.01, 0.99]\). We then fit generative models to the joint data \([Z, r(Z)]\). To find the roots, we condition on \(r(Z) = 0\) and sample from the resulting conditional distribution \(p(Z \mid r = 0)\). Figure \ref{fig:pr-roots} shows the conditional probability density, which exhibits peaks corresponding to the liquid (\(Z_L \approx 0.035\)), unstable (\(Z \approx 0.13\)), and vapor (\(Z_V \approx 0.81\)) roots. Furthermore, cluster analysis of the samples yields the expected results as shown in Table \ref{tab:tab_root_finding}.
-
-
 
 \begin{figure}[H]
 \centering
@@ -281,56 +270,56 @@ The generative approach naturally obtains all three roots simultaneously, wherea
 
 \subsection{Unconstrained Optimization with generative models}
 
-Reactive systems are ubiquotous in chemical engineering applications, and optimizing these corresponds to an essential task. The following example considers the maximization of a desired generic product B, which is generated within a reaction newtork described by consecutive first-order reactions in a batch reactor:
+Reactive systems are ubiquitous in chemical engineering applications, and optimizing them is an essential task. The following example considers the maximization of a desired generic product B, which is generated within a reaction network described by consecutive first-order reactions in a batch reactor:
 
 \begin{equation}
-A \xrightarrow{k_1} B \xrightarrow{k_2} C
+\mathrm{A} \xrightarrow{k_1} \mathrm{B} \xrightarrow{k_2} \mathrm{C}
 \end{equation}
 
-\noindent where \(B\) is the desired product and \(C\) is an unwanted byproduct. The following parameters were used:
+\noindent where B is the desired product and C is an unwanted byproduct. The following parameters were used:
 \(k_1 = 0.5\) min\(^{-1}\) (A \(\rightarrow\) B), \(k_2 = 0.2\) min\(^{-1}\) (B \(\rightarrow\) C), \(C_{A0} = 1.0\) mol/L. This leads to an optimal solution of \(\tau^* \approx 3.05\) min and \(C_B(\tau^*) \approx 0.549\) mol/L if the problem is to be solved by the means of classic mathematical programming.
 
-The concentration of intermediate \(B\) at time \(\tau\) is given by Eq. \ref{eq:react_01}.
+The concentration of intermediate B at time \(\tau\) is given by Eq. \ref{eq:react_01}.
 \begin{equation} \label{eq:react_01}
 C_B(\tau) = \frac{C_{A0} k_1}{k_2 - k_1} \left(e^{-k_1\tau} - e^{-k_2\tau}\right)
 \end{equation}
 
-\noindent where \(C_{A0}\) is the initial concentration of \(A\), and \(k_1\), \(k_2\) are the rate constants.
+\noindent where \(C_{A0}\) is the initial concentration of A, and \(k_1\), \(k_2\) are the rate constants.
 
-The optimization problem is to find the residence time \(\tau^*\) that maximizes the concentration of intermediate \(B\):
+The optimization problem is to find the residence time \(\tau^*\) that maximizes the concentration of intermediate B:
 \begin{equation}
 \max_{\tau} C_B(\tau)
 \end{equation}
 
-\noindent The first-order necessary condition for a maximum is given by Eq.\ref{eq:optimality},
+\noindent The first-order necessary condition for a maximum is given by Eq. \ref{eq:optimality},
 \begin{equation}
 \frac{dC_B}{d\tau} = C_{A0} k_1 \frac{k_2 e^{-k_2\tau} - k_1 e^{-k_1\tau}}{k_2 - k_1} = 0
 \label{eq:optimality}
 \end{equation}
 
-\noindent And solving Eq. \ref{eq:optimality} yields the analytical optimum, as illustrated in Eq.\ref{eq:optimal_sol}.
+\noindent And solving Eq. \ref{eq:optimality} yields the analytical optimum, as illustrated in Eq. \ref{eq:optimal_sol}.
 \begin{equation} \label{eq:optimal_sol}
 \tau^* = \frac{\ln(k_1/k_2)}{k_1 - k_2}
 \end{equation}
 
-\noindent The second derivative test confirms this corresponds to a maximum, as shown in Eq.\ref{eq:optimal_condition}
+\noindent The second derivative test confirms this corresponds to a maximum, as shown in Eq. \ref{eq:optimal_condition}
 \begin{equation} \label{eq:optimal_condition}
 \frac{d^2C_B}{d\tau^2}\bigg|_{\tau=\tau^*} < 0
 \end{equation}
 
-\noindent Rather than solving the optimality condition analytically, the generative approach starts by generating training data consisting of tuples \(\left(\tau, C_B(\tau), \frac{dC_B}{d\tau}\right)\), learning the joint distribution \(p\left(\tau, C_B, \frac{dC_B}{d\tau}\right)\), then identifying the optimum by sampling from the conditional distribution \(p\left(\tau \mid \frac{dC_B}{d\tau} = 0\right)\). Furthermore, it is important to note that this probabilistic inference approach theoretically generalizes to any complex reaction networks where analytical solutions do not exist, being potentially useful in more complex applications in which a first principles model is not readily available, for example.
+\noindent Rather than solving the optimality condition analytically, the generative approach starts by generating training data consisting of tuples \(\left(\tau, C_B(\tau), \frac{dC_B}{d\tau}\right)\), learning the joint distribution \(p\left(\tau, C_B, \frac{dC_B}{d\tau}\right)\), then identifying the optimum by sampling from the conditional distribution \(p\left(\tau \mid \frac{dC_B}{d\tau} = 0\right)\) (Figure \ref{fig-optimization}). Furthermore, it is important to note that this probabilistic inference approach theoretically generalizes to any complex reaction networks where analytical solutions do not exist, including more complex applications in which a first principles model is not readily available.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=.9\linewidth]{./optimization_comparison.png}
-\caption{\label{fig-optimization}Optimization via conditional sampling for consecutive reactions A \(\rightarrow\) B \(\rightarrow\) C. (a) Intermediate product concentration \(C_B(\tau)\) shows maximum at \(\tau^* \approx 3.05\) min. (b) First derivative \(dC_B/d\tau\) crosses zero at the optimum. (c-d) GMM and flow matching identify the optimum by sampling from \(P(\tau | dC_B/d\tau = 0)\), producing narrow distributions (red/blue solid lines show means) that closely match the analytical solution (black dashed line). Both methods successfully solve the optimization problem through probabilistic inference, demonstrating that conditioning on the optimality condition (derivative = 0) yields the optimal residence time with inherent uncertainty quantification.}
+\caption{\label{fig-optimization}Optimization via conditional sampling for consecutive reactions A \(\rightarrow\) B \(\rightarrow\) C. (a) Intermediate product concentration \(C_B(\tau)\) shows maximum at \(\tau^* \approx 3.05\) min. (b) First derivative \(dC_B/d\tau\) crosses zero at the optimum. (c-d) GMM and flow matching identify the optimum by sampling from \(P(\tau C_B(\tau) | dC_B/d\tau = 0)\), producing narrow distributions (red/blue solid lines show means) that closely match the analytical solution (black dashed line). Both methods successfully solve the optimization problem through probabilistic inference, demonstrating that conditioning on the optimality condition (derivative = 0) yields the optimal residence time with inherent uncertainty quantification.}
 \end{figure}
 
 \subsection{Optimization with equality constraints}
 
-If equality constraints are present in the engineering application at hand (which is not uncommon), it is not possible to solve the underlying optimization problem by just conditioning on the objective function's derivative being zero. For example, if a constraint is active, the derivative of the objective function is not equal zero at the constrained optimal solution. To solve this generatively, we turn to optimization theory and employ the Lagrangian function, that reformulates the constrained problem as an unconstrained one, in which the derivatives of the Lagrangian are equal to zero. We can construct this function, generate samples of the inputs (including the Lagrange multiplier \(\lambda\) values) and the derivatives of the Lagrangian. Subsequently, we can obtain solutions by conditioning on \(\nabla\mathcal{L} = 0\).
+If equality constraints are present in the engineering application at hand (which is not uncommon), it is not possible to solve the underlying optimization problem by just conditioning on the objective function's derivative being zero. For example, if a constraint is active, the derivative of the objective function is not equal zero at the constrained optimal solution. To solve this generatively, we turn to optimization theory and employ the Lagrangian approach, that reformulates the constrained problem as an unconstrained one, in which the derivatives of the Lagrangian are equal to zero. We can construct this function, generate samples of the inputs (including the Lagrange multiplier \(\lambda\) values) and the derivatives of the Lagrangian. Subsequently, we can obtain solutions by conditioning on \(\nabla\mathcal{L} = 0\).
 
-We illustrate this with a practical chemical engineering problem: finding a gasoline blend closest to a target recipe while meeting an octane specification. Assuming an oil refinery blends three components (reformate, isomerate, and alkylate) and wants to minimize deviation from a preferred blend composition \((x_1^*, x_2^*, x_3^*) = (0.4, 0.4, 0.2)\) while satisfying quality constraints. The problem is formulated as is Eq. \ref{eq:blending_problem}.
+We illustrate this with a practical chemical engineering problem: finding a gasoline blend closest to a target recipe while meeting an octane specification. Assuming an oil refinery blends three components (reformate, isomerate, and alkylate) and wants to minimize deviation from a preferred blend composition \((x_1^*, x_2^*, x_3^*) = (0.4, 0.4, 0.2)\) while satisfying quality constraints. The problem is formulated as shown in Eq. \ref{eq:blending_problem}.
 
 \begin{equation} \label{eq:blending_problem}
 \begin{aligned}
@@ -364,19 +353,19 @@ The Karush-Kuhn-Tucker conditions (KKT) for the equality-constrained optimizatio
 
 Our generative optimization approach reformulates this constrained optimization, translating it into a sampling problem. We generate samples of \((x_1, x_2, x_3, \lambda_1, \lambda_2)\) along with their corresponding Lagrangian derivatives (which are computed using automatic differentiation - AD), train a GMM on this joint distribution, and then condition on all five derivatives being zero to recover the optimal blend.
 
-The reference solution from \texttt{scipy.optimize.minimize} with the Sequential Least Squares Programming (SLSQP) method yields \(x_1 = 0.284\), \(x_2 = 0.607\), \(x_3 = 0.109\). Conditioning the GMM on \(\nabla\mathcal{L} = 0\) recovers this solution with high accuracy: GMM estimates of \(x_1 = 0.284 \pm 0.004\), \(x_2 = 0.607 \pm 0.008\), \(x_3 = 0.109 \pm 0.003\). The optimal blend deviates from the target to satisfy the octane constraint, using more isomerate (which has the lowest octane) and less reformate than the target recipe.
+The reference solution from \texttt{scipy.optimize.minimize} with the Sequential Least Squares Programming (SLSQP) method yields \(x_1 = 0.284\), \(x_2 = 0.607\), \(x_3 = 0.109\). Conditioning the GMM on \(\nabla\mathcal{L} = 0\) recovers this solution with high accuracy: GMM estimates of \(x_1 = 0.284 \pm 0.004\), \(x_2 = 0.607 \pm 0.008\), \(x_3 = 0.109 \pm 0.003\). Figure \ref{fig:blending} shows that GMM, flow matching and \texttt{scipy} all show good agreement. The optimal blend deviates from the target to satisfy the octane constraint, using more isomerate (which has the lowest octane) and less reformate than the target recipe.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=1.0\linewidth]{./blending_comparison.png}
-\caption{\label{fig:blending}Comparison of GMM and Flow Matching for equality-constrained optimization of a gasoline blending problem. The objective is to find the blend composition closest to a target recipe (\(x_1^* = 0.4\), \(x_2^* = 0.4\), \(x_3^* = 0.2\)) while satisfying an octane specification (RON = 87) and mass balance constraint. Panels (a)-(c) show the sample distributions for each blend fraction obtained by conditioning on the KKT conditions (\(\nabla\mathcal{L} = 0\)). Red histograms: GMM samples; blue histograms: Flow Matching samples; solid black lines: scipy SLSQP reference solution; dashed green lines: target blend values. Both generative methods produce distributions centered near the optimal solution, with GMM showing slightly tighter distributions than Flow Matching. The optimal blend deviates from the target to satisfy the octane constraint, using more isomerate (\(x_2\)) and less reformate (\(x_1\)) than targeted.}
+\caption{\label{fig:blending}Comparison of GMM and Flow Matching for equality-constrained optimization of a gasoline blending problem. The objective is to find the blend composition closest to a target recipe (\(x_1^* = 0.4\), \(x_2^* = 0.4\), \(x_3^* = 0.2\)) while satisfying an octane specification (RON = 87) and mass balance constraint. Panels (a)-(c) show the sample distributions for each blend fraction obtained by conditioning on the KKT conditions (\(\nabla\mathcal{L} = 0\)). Red histograms: GMM samples; blue histograms: Flow Matching samples; solid black lines: \texttt{scipy} SLSQP reference solution; dashed green lines: target blend values. Both generative methods produce distributions centered near the optimal solution, with GMM showing slightly tighter distributions than Flow Matching. The optimal blend deviates from the target to satisfy the octane constraint, using more isomerate (\(x_2\)) and less reformate (\(x_1\)) than targeted.}
 \end{figure}
 
 \subsection{Constrained optimization with an inequality}
 
 Inequality constraints bring a new challenge when using a generative sampling-based method as the one proposed in this work: there could be a range of possible values that could satisfy the solution (that is the nature of inequality), hence, it is not possible to condition on one set of values like it is with the equality constraint. A benefit of the conventional mathematical programming approaches such as the implementations in the \texttt{minimize} function in \texttt{scipy} is one simply changes the constraint type and the optimization formulations.
 
-We cannot use the Lagrange method for an inequality constrained problem as done in the previous example for an equality constrained case. Instead we consider the barrier method \cite{nocedal2006numerical}. Recalling the barrier function for the inequality-constrained optimization problem defined as in Eq. \ref{eq:barrier_ineq}, in which the objective function incorporates the set of inequality constraints \(\mathcal{I}\).
+We cannot use the Lagrange method for an inequality constrained problem as done in the previous example for an equality constrained case. Instead, we consider the barrier method \cite{nocedal2006numerical}. Recalling the barrier function for the inequality-constrained optimization problem defined as in Eq. \ref{eq:barrier_ineq}, in which the objective function incorporates the set of inequality constraints \(\mathcal{I}\).
 
 \begin{equation} \label{eq:barrier_ineq}
 f(x)-\mu \sum_{i \in \mathcal{I}} \log c_i(x)
@@ -384,13 +373,13 @@ f(x)-\mu \sum_{i \in \mathcal{I}} \log c_i(x)
 
 From classic nonlinear optimization theory, it is known that when \(\mu \to 0\), that is, there is a decreasing sequence of barrier parameter values \cite{wachter2006implementation}, the barrier terms vanishes and the adapted problem in Eq. \ref{eq:barrier_ineq} collapses into the original inequality problem. Now, the main task is to specify a \(\mu\) value here and that is usually selected iteratively. We do not do that here, but use a value known to be adequate for our proposed approach. It should be possible to iteratively try different values of \(\mu\) to convergence, but we rather focus on demonstrating that is possible to use a generative approach to inequality constrained optimization problem, as a rich body of literature in inequality constrained optimization already discusses challenges in this area \cite{nocedal2006numerical,wachter2006implementation}.
 
-A physically motivated inequality constraint example arises in chemical reaction equilibrium. Consider the reversible reaction \(A + B \rightleftharpoons 2C\) in a batch reactor. Given initial concentrations \(C_{A0} = C_{B0} = 1\) mol/L and \(C_{C0} = 0\), the concentrations evolve with extent of reaction \(\xi\) as in Eq. \ref{eq:equilibrium_eq}.
+A physically motivated inequality constraint example arises in chemical reaction equilibrium. Consider the reversible reaction A + B $\rightleftharpoons$ 2C in a batch reactor. Given initial concentrations \(C_{A0} = C_{B0} = 1\) mol/L and \(C_{C0} = 0\), the concentrations evolve with extent of reaction \(\xi\) as in Eq. \ref{eq:equilibrium_eq}.
 
 \begin{equation} \label{eq:equilibrium_eq}
 C_A = 1 - \xi, \quad C_B = 1 - \xi, \quad C_C = 2\xi
 \end{equation}
 
-From the equilibrium condition, Eq. \ref{eq:eq_condition} can be derived, and the equilibrium residual (Eq.\ref{eq:eq_residual}) is obtained.
+From the equilibrium condition, Eq. \ref{eq:eq_condition} can be derived, and the equilibrium residual (Eq. \ref{eq:eq_residual}) is obtained.
 
 \begin{equation} \label{eq:eq_condition}
 K_{eq} = \frac{C_C^2}{C_A \cdot C_B} = \frac{(2\xi)^2}{(1-\xi)^2}
@@ -400,7 +389,7 @@ K_{eq} = \frac{C_C^2}{C_A \cdot C_B} = \frac{(2\xi)^2}{(1-\xi)^2}
 f(\xi) = K_{eq}(1-\xi)^2 - 4\xi^2
 \end{equation}
 
-For \(K_{eq} = 1\), the analytical solution where \(f(\xi) = 0\) is \(\xi^* = 1/3\), giving equilibrium concentrations \(C_A = C_B = 2/3\) mol/L and \(C_C = 2/3\) mol/L. The physical constraint that concentrations must be non-negative requires \(0 < \xi < 1\).
+For \(K_{eq} = 4\), the analytical solution where \(f(\xi) = 0\) is \(\xi^* = 1/2\). The physical constraint that concentrations must be non-negative requires \(0 < \xi < 1\).
 
 We formulate this as an optimization problem: minimize the squared residual \(f(\xi)^2\) subject to the inequality constraints \(\xi > 0\) and \(\xi < 1\). Using the barrier method, we define the augmented objective:
 
@@ -410,25 +399,94 @@ We formulate this as an optimization problem: minimize the squared residual \(f(
 
 \noindent where \(\mu = 0.001\) is the barrier parameter. The logarithmic barrier terms become large as \(\xi\) approaches the constraint boundaries, keeping solutions in the feasible interior. At the optimum, \(\frac{d\phi}{d\xi} = 0\).
 
-To solve this with a generative approach, we sample \(\xi\) values in the feasible region \((0, 1)\), compute the barrier objective gradient \(\frac{d\phi}{d\xi}\) at each sample using automatic differentiation, train generative models on the joint distribution \([\xi, \frac{d\phi}{d\xi}]\), and condition on the gradient being zero to find the optimal extent. Both GMM and flow matching are capable of successfully identifying \(\xi \approx 1/3\), as shown in Figure \ref{fig:equilibrium}.
+To solve this with a generative approach, we sample \(\xi\) values in the feasible region \((0, 1)\), compute the barrier objective gradient \(\frac{d\phi}{d\xi}\) at each sample using automatic differentiation, train generative models on the joint distribution \([\xi, \frac{d\phi}{d\xi}]\), and condition on the gradient being zero to find the optimal extent. Both GMM and flow matching are capable of successfully identifying \(\xi \approx 1/2\), as shown in Figure \ref{fig:equilibrium}.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=.9\linewidth]{./equilibrium_comparison.png}
-\caption{\label{fig:equilibrium}Reaction equilibrium \(A + B \rightleftharpoons 2C\) solved via barrier method optimization. (a) The gradient of the barrier objective \(\frac{d\phi}{d\xi}\), which equals zero at the equilibrium extent \(\xi^* = 1/3\). Training data points shown in light blue. (b) Distributions of \(\xi\) values obtained by conditioning GMM (red) and Flow Matching (blue) on \(\frac{d\phi}{d\xi} = 0\). Both methods successfully identify the analytical solution (black dashed line).}
+\caption{\label{fig:equilibrium}Reaction equilibrium A + B $\rightleftharpoons$ 2C solved via barrier method optimization. (a) The gradient of the barrier objective \(\frac{d\phi}{d\xi}\), which equals zero at the equilibrium extent \(\xi^* = 1/2\). Training data points shown in light blue. (b) Distributions of \(\xi\) values obtained by conditioning GMM (red) and Flow Matching (blue) on \(\frac{d\phi}{d\xi} = 0\). Both methods successfully identify the analytical solution (black dashed line).}
 \end{figure}
 
 This example demonstrates that inequality-constrained optimization problems can be solved with the generative approach using the barrier method. By incorporating logarithmic barrier terms and conditioning on the gradient of the augmented objective being zero, we find physically meaningful solutions while respecting the inequality constraints. This approach can also be generalized to more complex reaction networks and constraint sets.
 
+\subsection{Parameter estimation with generative models}
+
+Parameter estimation in regression is a class of inverse problem \cite{Aster2013}. Usually we consider this in the context of optimization as finding a set of parameters (inputs, or decision variables) that minimize an objective function (outputs) of the errors between a model and observations. To recast this idea for a generative model, we consider the dataset as having columns of parameters (inputs) and observations (outputs). The observations could be derivatives of the objective function, and the remaining task is, once again, to condition on those being zero as previously described. We take an alternative approach here, and consider the observations to be some output of a model. Hence, given an observation, we condition on that to obtain the parameters most consistent with that observation. This approach is fundamentally different from regression where parameters are estimated by minimizing some function of pooled errors.
+
+For a concrete example, we use a series reaction: A \(\rightarrow\) B \(\rightarrow\) C in a plug flow reactor. The observations we have will be the exit molar flow rates of A and B. We use an inlet molar flow, fixed volume and volumetric flow rate. The system is governed by these two differential equations described in Eq. \ref{eq:odes_parmest}.
+
+\begin{align} \label{eq:odes_parmest}
+\frac{dF_A}{dV} &= -\frac{k_1 F_A}{\nu} \\
+\frac{dF_B}{dV} &= \frac{k_1 F_A}{\nu} - \frac{k_2 F_B}{\nu}
+\end{align}
+
+We sample a range of rate constants and compute the exit molar flows of A and B. This data set is what we will use to build a generative model next.  We generate samples of \(k_1, k_2\) in the range of $[0.1, 3]$. We can see what this data looks like in Figure \ref{fig-k1-k2-ca-cb}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.9\linewidth]{./k1-k2-Ca-Cb.png}
+\caption{\label{fig-k1-k2-ca-cb}Contour plots of the relationships between \(k_1\) and \(k_2\) and a) \(F_A\) and b) \(F_B\).}
+\end{figure}
+
+It is evidently not enough to specify one of these values to uniquely specify the rate constants. In \(F_A\), there are near vertical isolines, and in \(F_B\) other isolines. For example, for \(k_1=2\), \(F_a\) will be between 0-0.02 for a broad range of \(k_2\) values, and which value of \(k_2\) that is chosen depends on the value of \(F_b\) that is observed. If you see low \(F_b\), \(k_2\) will be closer to 2, and if \(F_b\) is high, then \(k_2\) is closer to 0.2.
+
+For generative parameter estimation we can consider the joint probability distribution that encompasses the variables of interest, that is, \([k_1, k_2, F_A, F_B]\), and then condition the distribution on observed output concentrations to generate the set of parameters that are consistent that those observations. For illustrative purposes we estimate parameters for two scenarios at the reactor outlet:
+
+\begin{enumerate}
+\item A low molar flow of A with low molar flow of B, i.e. both reactions are fast.
+\item A low molar flow of A with high molar flow of B, i.e. reaction 1 is fast, and reaction 2 is slow.
+\end{enumerate}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.9\linewidth]{./parameter_estimation_comparison.png}
+\caption{\label{fig-parest}Estimating rate constants $(k_1, k_2)$ from reactor exit flows \((F_A, F_B)\) using GMM and Flow Matching. Left panels show joint distributions in parameter space; right panels show marginal distributions. (a-b) Scenario 1 (\(F_A\) = 0.02, \(F_B\) = 0.05): Both reactions fast, requiring high \(k_1\) and \(k_2\). (c-d) Scenario 2 (\(F_A\) = 0.02, \(F_B\) = 0.65): First reaction fast, second slow, requiring high \(k_1\) and low \(k_2\). Both methods correctly identify the parameter regimes. GMM shows minor multimodality due to the non-unique inverse problem, while Flow Matching produces smoother distributions. Mean estimates (stars) accurately reproduce the target observations.}
+\end{figure}
+
+It is also possible to estimate a kind of uncertainty. The distribution of the estimated rate constants is due to the surrogate models not fitting the data perfectly well, as seen in the parity plot. It is also possible to use this approach to map uncertainties in the inputs to the outputs and vice versa. For example, if one has the confidence intervals of a parameter they can map that range onto outputs with this approach. We illustrate this kind of mapping in Sec. \ref{mapping}, and previously showed an approach using inverse mapping concepts \cite{alves-2025-mappin-uncer}.
+
+\subsection{Mapping input and output spaces \label{mapping}}
+
+We previously developed a mapping approach based on differential equations, path integration, and the implicit function theorem \cite{alves-2023}. We illustrate here that this can also be achieved by a generative model. The goal is to map a desired output space in the concentration of A, B from a CSTR to the input space of the radius of a CSTR, and the temperature (in units of \(RT\)) that achieves it. We have a design with fixed height, and we can modify the radius and temperature (via RT). There are two reactions: 2A \(\rightarrow\) B, which is second order in A, and B \(\rightarrow\) C, which is first order in B. We seek a design space with desired amounts of A and B in the exit. We choose a circular region in the output space, and map it to the input space.
+
+Given a radius, we have \(V = \pi R^2 H\) and given an \(RT\) we have these rate constants for the two forward reactions: \(k_1 = \exp(-3 / RT)\), \(k_2 = \exp(-10 / RT)\). We start with a mole balance:
+
+\begin{equation}
+0 = F_{A0} - F_A + r_A V
+\end{equation}
+
+Some rearrangement leads to:
+\begin{equation}
+0 = V k_1 C_A^2 + (\nu_0 + V k_2) C_A - F_{A0}
+\end{equation}
+
+\noindent which we can solve with the quadratic equation to get \(C_A\) as a function of \((R, RT)\), and then from a mole balance on B, we get
+\begin{equation}
+C_B = k_1 C_A^2 V / \nu_0
+\end{equation}
+
+\noindent Thus, we can analytically map the input space to the output space as shown in Figure \ref{fig-mapping}. We do this by brute force sampling here and show how a circular region in the output space maps to the input space. We choose this example because it is easy to do this analytically, but this forward mapping can also be done in nonlinear programs.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=.9\linewidth]{./space_mapping_comparison.png}
+\caption{\label{fig-mapping}Mapping a desired concentration region (b, red circle: $C_A$ = 0.58, $C_B$ = 0.30 $\pm$ 0.08 mol/L) to feasible design parameters using (a) GMM and (c) Flow Matching. Both methods identify the irregular, non-convex region in (R, RT) space that produces the target concentrations. Background points show training data colored by distance from origin. The complex shape of the mapped region reveals the nonlinear relationship between reactor size, temperature, and exit concentrations, demonstrating that multiple design configurations can achieve the same production target. This inverse mapping capability is unique to generative models.}
+\end{figure}
+
+
+This is not the same as learning a forward or inverse model, e.g. a neural network or Gaussian process model. Instead, it is an approximate, data-driven mapping through a joint distribution model. It is not as smooth as the mapping by ODEs \cite{alves-2023}, or an analytical mapping, but it might be suitable for some applications, such as when sensor data is available but a mechanistic model is not fully developed or is computationally expensive to evaluate in the inverse mapping direction. Furthermore, building the generative model from more samples would improve the mapping accuracy. It is also possible to map in the forward direction, e.g. from a desired input space to an output space. This has applications in uncertainty propagation \cite{alves-2025-mappin-uncer}, for instance.
+
+There is a connection between the mapping of input and output spaces by differential equations we previously developed \cite{alves-2023} and the generative models we use here. Previously \cite{alves-2023} we used a differentiable model to derive a set of ODEs that connect the input and output spaces. We considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In flow-mapping one uses machine learning to learn the vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea we developed in our previous work \cite{alves-2023,alves-2025-mappin-uncer}.
+
+
 
 \subsection{Process flowsheet constrained optimization and feasibility}
 
-A more complete and realistic case that is relevant to process systems engineering corresponds to flowsheet constrained optimization. More often than not, sensor data and/or plant measurements are recorded and stored in data historians, being particularly useful within distributed control system (DCS) architectures which are implemented seeking several objectives such as plantwide process control, fault diagnosis, hazardous and operability studies (HAZOP), real time optimization and process monitoring. This ever-increasing amount of data provides a clear opportunity to train generative models that can be used to pre-screen operating regions, including optimality driven ones. Such generative models can be used in parallel to the development of rigorous, first-principles-based process models, for instance. In summary, if process data is available, it is possible to use it to build generative joint probability distributions of  
-objective functions that can represent operating cost/profit of a given process, and process variables/constraints that may need to be imposed. Similar approaches have been developed in the context of reinforcement learning for bioprocess optimization \cite{Petsagkourakis2020}, using policy gradients.
+As a capstone example illustrating a more complex, higher dimensional, nonlinear process we consider a flowsheet constrained optimization. More often than not, sensor data and/or plant measurements are recorded and stored in data historians, being particularly useful within distributed control system (DCS) architectures which are implemented seeking several objectives such as plant-wide process control, fault diagnosis, hazardous and operability studies (HAZOP), real time optimization and process monitoring. This ever-increasing amount of data provides a clear opportunity to train generative models that can be used to pre-screen operating regions, including optimality driven ones. Such generative models can be used in parallel to the development of rigorous, first-principles-based process models, for instance. In summary, if process data is available, it is possible to use it to build generative joint probability distributions of objective functions that can represent operating cost/profit of a given process, and process variables/constraints that may need to be imposed. Similar approaches have been developed in the context of reinforcement learning for bioprocess optimization \cite{Petsagkourakis2020}, using policy gradients.
 
 It is important to note that the constraints of a given process would be typically inherently represented in the historian data itself, since control structures and operators simultaneously and continuously maintain the process within the feasible region whenever possible. Furthermore, even if the historian data contains points outside the feasible region of operation, this data is equally important as they can bound the training data regime, reducing the possibility of extrapolation.
 
-As an example of a process flowsheet, we consider an evaporation process that has been used extensively in the plantwide control literature \cite{kariwala07,Alves2018} as a benchmark of self-optimizing control \cite{skogestad00,Jaschke2017} algorithms. The evaporation process is illustrated in Figure \ref{fig:evap_schematic}. The main goal of this process corresponds increase the concentration of some generic dilute liquor through the evaporation of a solvent from the feed, employing heat exchanger as depicted, and the description of each process variable is available on Table \ref{tab:evap_table}, based on the original source \cite{kariwala07}.
+As an example of a process flowsheet, we consider an evaporation process that has been used extensively in the plant-wide control literature \cite{kariwala07,Alves2018} as a benchmark of self-optimizing control \cite{skogestad00,Jaschke2017} algorithms. The evaporation process is illustrated in Figure \ref{fig:evap_schematic}. The main goal of this process is to increase the concentration of some generic dilute liquor through the evaporation of a solvent from the feed, employing a heat exchanger as depicted. The description of each process variable is available in Table \ref{tab:evap_table}, based on the original source \cite{kariwala07}.
 
 
 \begin{figure}[H]
@@ -460,7 +518,7 @@ $T_3$   & vapor temperature           & $Q_{200}$ & condenser duty \\
 \end{table}
 
 
-We follow the original source of the problem definition \cite{kariwala07}, in which $X_1=5\%$,$T_1=40^o C$,$T_{200}=25^o C$ are considered process disturbances at their nominal values. Furthermore, the process flow rates are in $kg/min$, temperatures in $^o C$, pressures in $kPa$, heat duties in $kW$ and compositions in percentages (e.g., $\%$). The constrained optimization problem posed corresponds to maximize the operational profit of this process as shown previously \cite{kariwala07}, subject to several process constraints. This leads to the optimization problem described in Eq. \ref{eq:evap_problem}, to be solved at steady-state.
+We follow the original source of the problem definition \cite{kariwala07}, in which $X_1=5\%$,$T_1=40 ^\circ\mathrm{C}$,$T_{200}=25 ^\circ\mathrm{C}$ are considered process disturbances at their nominal values. Furthermore, the process flow rates are in $kg/min$, temperatures in $^\circ\mathrm{C}$, pressures in $kPa$, heat duties in $kW$ and compositions in percentages (e.g., $\%$). The constrained optimization problem posed corresponds to maximize the operational profit of this process as shown previously \cite{kariwala07}, subject to several process constraints. This leads to the optimization problem described in Eq. \ref{eq:evap_problem}, to be solved at steady-state.
 
 \begin{subequations}\label{eq:evap_problem}
 \begin{align}
@@ -507,109 +565,37 @@ We follow the original source of the problem definition \cite{kariwala07}, in wh
 \end{align}
 \end{subequations}
 
-The objective function comprises terms containing operating costs of water, steam and pumping \cite{kariwala07}, while the fourth and last terms correspond to raw material cost and product revenue, respectively. It is known \cite{kariwala07,Alves2018} that at under nominal disturbances, the optimal operation is constrained at $X_2 = 35.5\%$ and $P_{100}  = 400 kPa$, with an optimal economic operation of $\$582.233/h$. 
+The objective function comprises terms containing operating costs of water, steam and pumping \cite{kariwala07}, while the fourth and last terms correspond to raw material cost and product revenue, respectively. It is known \cite{kariwala07,Alves2018} that under nominal disturbances, the optimal operation is constrained at $X_2 = 35.5\%$ and $P_{100}  = 400 kPa$, with an optimal economic operation of $\$582.233/h$. 
 
 We employ our proposed approach by generating synthetic data corrupted with pseudorandom noise, in order to mimic the presence of noise in real historian data, and we build a generative model of the joint probability distribution of the entire optimization space. This corresponds to using sensor data from the process measurements to evaluate the objective function and process constraints defined as in Eq. \ref{eq:evap_problem}.
 
-Differently from the reaction equilibrium example, where we used the penalty-barrier approach, in this case-study a \emph{constraint bound and residual conditioning} approach is employed, that leverages the structure of inequality-constrained optimization problems. The main idea is that when inequality constraints are active at optimality, they effectively become equality constraints. Since it is known from the ``product giveaway rule'' \cite{minasidis2015simple,Jacobsen2011,Jacobsen2012} that compositions will be nominally active constraints, as well as inventories and pressures as discussed in the literature \cite{minasidis2015simple}, one is able to evaluate the feasible region at the bound of such variables. Hence, the constraints related to product specification and operating pressure at $X_2 = 35.5\%$ and $P_{100} = 400$ kPa are treated at their respective bounds as conditioning variables.
+Differently from the reaction equilibrium example, where we used the penalty-barrier approach, in this case-study a \emph{constraint bound and residual conditioning} approach is employed, that leverages the structure of inequality-constrained optimization problems. The main idea is that when inequality constraints are active at optimality, they effectively become equality constraints. Since it is known from the ``product giveaway rule'' \cite{Jacobsen2011,Jacobsen2012,minasidis2015simple} that compositions will be nominally active constraints, as well as inventories and pressures as discussed in the literature \cite{minasidis2015simple}, one is able to evaluate the feasible region at the bound of such variables. Hence, the constraints related to product specification and operating pressure at $X_2 = 35.5\%$ and $P_{100} = 400$ kPa are treated at their respective bounds as conditioning variables.
 
-To generate diverse training data, we adopt a \emph{constraint variation} approach: we solve a series of evaporator problems over a grid of constraint configurations ($X_2^{\min} \in [33, 38]\%$, $P_{100}^{\max} \in [260, 400]$ kPa), in which some of the operational values are feasible with respect to the optimization problem in Eq. \ref{eq:evap_problem} while operation outside the range of $X_2$ and $P_{100}$ are not. Each configuration yields different optimal and suboptimal solutions where the inequality constraints are active at their respective bounds, providing a diverse training dataset from an operational standpoint. This diversity is essential for the generative model to learn how optimal solutions vary with constraint bounds. We argue that a real chemical plant operates similarly as discussed previously, in which controllers and operators are maintaining the plant at the feasible region but extracting the maximum operation that can be possibly done.
-
-Lastly, our proposed approach learns the joint probability distribution $p(\boldsymbol{x}, \boldsymbol{h}(\boldsymbol{x}))$, where $\boldsymbol{h}(\boldsymbol{x}) \in \mathbb{R}^{12}$ represents the equality constraint residuals (the process model equations). At inference time, we condition on three types of information: (1) $X_2 = 35.5\%$, (2) $P_{100} = 400$ kPa, and (3) $\boldsymbol{h}(\boldsymbol{x}) = \boldsymbol{0}$. This yields 14 conditioning dimensions total (2 constraint bounds + 12 constraint residuals). The approach is conceptually similar to parameter estimation: the constraint bounds serve as ``parameters'' that vary across training examples but are fixed to specific target values at inference time.
+To generate diverse training data, we adopt a \emph{constraint variation} approach: we solve a series of evaporator problems over a grid of constraint configurations ($X_2^{\min} \in [33, 38]\%$, $P_{100}^{\max} \in [260, 400]$ kPa), in which some operational values are feasible with respect to the optimization problem in Eq. \ref{eq:evap_problem} while operation outside the range of $X_2$ and $P_{100}$ are not (Figure \ref{fig-evaporator-training}). Each configuration yields different optimal and suboptimal solutions where the inequality constraints are active at their respective bounds, providing a diverse training dataset from an operational standpoint. This diversity is essential for the generative model to learn how optimal solutions vary with constraint bounds. We argue that a real chemical plant operates similarly, in which controllers and operators are maintaining the plant at the feasible region but extracting the maximum operation that can be possibly done.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=.95\linewidth]{./evaporator_training_coverage.png}
-\caption{\label{fig-evaporator-training}Training data coverage and generative model sampling for the evaporator optimization problem. (a) Constraint space showing the diverse training data generated via constraint variation ($X_2^{\min} \in [33, 38]\%$, $P_{100}^{\max} \in [260, 400]$ kPa), along with samples generated by GMM and Flow Matching when conditioned on the target values $X_2 = 35.5\%$ and $P_{100} = 400$ kPa. The GMM samples cluster tightly at the conditioned values, while Flow Matching samples show slight spread around the target. (b) Trade-off between objective function value and constraint satisfaction. Both methods generate samples near the Scipy optimal solution, with Flow Matching producing more samples in the near-feasible region (violation $< 0.1$).}
+\caption{\label{fig-evaporator-training}Training data coverage and generative model sampling for the evaporator optimization problem. (a) Constraint space showing the diverse training data generated via constraint variation ($X_2^{\min} \in [33, 38]\%$, $P_{100}^{\max} \in [260, 400]$ kPa), along with samples generated by GMM and Flow Matching when conditioned on the target values $X_2 = 35.5\%$ and $P_{100} = 400$ kPa. The GMM samples cluster tightly at the conditioned values, while Flow Matching samples show slight spread around the target. (b) Trade-off between objective function value and constraint satisfaction. Both methods generate samples near the \texttt{scipy} optimal solution, with Flow Matching producing more samples in the near-feasible region (violation $< 0.1$).}
 \end{figure}
+
+Lastly, our proposed approach learns the joint probability distribution $p(\boldsymbol{x}, \boldsymbol{h}(\boldsymbol{x}))$, where $\boldsymbol{h}(\boldsymbol{x}) \in \mathbb{R}^{12}$ represents the equality constraint residuals (the process model equations). At inference time, we condition on three types of information: (1) $X_2 = 35.5\%$, (2) $P_{100} = 400$ kPa, and (3) $\boldsymbol{h}(\boldsymbol{x}) = \boldsymbol{0}$. This yields 14 conditioning dimensions total (2 constraint bounds + 12 constraint residuals). The approach is conceptually similar to parameter estimation: the constraint bounds serve as ``parameters'' that vary across training examples but are fixed to specific target values at inference time.
 
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=.95\linewidth]{./evaporator_relative_error.png}
-\caption{\label{fig-evaporator-error}Relative error in each decision variable for the best GMM and Flow Matching solutions compared to the Scipy reference. Most variables achieve errors below the 5\% threshold (dashed line). The conditioning variables $X_2$ and $P_{100}$ show near-zero error for GMM (since they are directly conditioned) and very small error for Flow Matching. Larger relative errors in some flow rates and duties reflect the sensitivity of these variables to small perturbations in the coupled system of equations.}
+\caption{\label{fig-evaporator-error}Relative error in each decision variable for the best GMM and Flow Matching solutions compared to the \texttt{scipy} reference. Most variables achieve errors below the 5\% threshold (dashed line). The conditioning variables $X_2$ and $P_{100}$ show near-zero error for GMM (since they are directly conditioned) and very small error for Flow Matching. Larger relative errors in some flow rates and duties reflect the sensitivity of these variables to small perturbations in the coupled system of equations.}
 \end{figure}
+
+
+Figure \ref{fig-evaporator-error} shows the relative error in each decision variable for the best solutions found by GMM and Flow Matching compared to the \texttt{scipy} reference solution. Most variables achieve errors below the 5\% threshold, indicating that both generative methods can accurately recover the optimal operating point. The conditioning variables \(X_2\) and \(P_{100}\) show near-zero error for GMM (since they are directly conditioned) and very small error for Flow Matching. Larger relative errors in some flow rates and duties reflect the sensitivity of these variables to small perturbations in the coupled system of equations. Figure \ref{fig-evaporator-summary} summarizes the optimality gap compared to a conventional solution and illustrates we get practically the same answer in a data-driven approach using GMM or flow matching methods.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=.95\linewidth]{./evaporator_summary_comparison.png}
-\caption{\label{fig-evaporator-summary}Summary performance comparison for the best solutions found by each generative optimization approach. (a) Optimality gap relative to the Scipy SLSQP reference solution ($-582.23$ \$/h). Both GMM and Flow Matching achieve small optimality gaps comparable to the literature solution. (b) Maximum equality constraint violation for the best sample from each method. The selected solutions are near-feasible with constraint violations below the 0.1 threshold, demonstrating that conditioning on $X_2 = 35.5\%$, $P_{100} = 400$ kPa, and $\boldsymbol{h}(\boldsymbol{x}) = \boldsymbol{0}$ effectively guides the models toward the feasible region.}
+\caption{\label{fig-evaporator-summary}Summary performance comparison for the best solutions found by each generative optimization approach. (a) Optimality gap relative to the \texttt{scipy} SLSQP reference solution (-582.23 \$/h). Both GMM and Flow Matching achieve small optimality gaps comparable to the literature solution. (b) Maximum equality constraint violation for the best sample from each method. The selected solutions are near-feasible with constraint violations below the 0.1 threshold, demonstrating that conditioning on $X_2 = 35.5\%$, $P_{100} = 400$ kPa, and $\boldsymbol{h}(\boldsymbol{x}) = \boldsymbol{0}$ effectively guides the models toward the feasible region.}
 \end{figure}
-
-
-\subsection{Parameter estimation with generative models}
-
-Parameter estimation in regression is a class of inverse problem \cite{Aster2013}. Usually we consider this in the context of optimization as finding a set of parameters (inputs, or decision variables) that minimize an objective function (outputs) of the errors between a model and observations. To recast this idea for a generative model, we consider the dataset as having columns of parameters (inputs) and observations (outputs). The observations could be derivatives of the objective function, and the remaining task is, once again, to condition on those being zero as previously described. We take an alternative approach here, and consider the observations to be some output of a model. Hence, given an observation, we condition on that to obtain the parameters most consistent with that observation. This approach is fundamentally different from regression where parameters are estimated by minimizing some function of pooled errors.
-
-For a concrete example, we use a series reaction: A \(\rightarrow\) B \(\rightarrow\) C in a plug flow reactor. The observations we have will be the exit molar flow rates of A and B. We use an inlet molar flow, fixed volume and volumetric flow rate. The system is governed by these two differential equations described in Eq. \ref{eq:odes_parmest}.
-
-\begin{align} \label{eq:odes_parmest}
-\frac{dF_A}{dV} &= -\frac{k_1 F_A}{\nu} \\
-\frac{dF_B}{dV} &= \frac{k_1 F_A}{\nu} - \frac{k_2 F_B}{\nu}
-\end{align}
-
-% \begin{equation}
-
-% \end{equation}
-
-We sample a range of rate constants and compute the exit molar flows of A and B. This data set is what we will use to build a generative model next.  We generate samples of \(k_1, k_2\) in the range of $[0.1, 3]$. We can see what this data looks like in Figure \ref{fig-k1-k2-ca-cb}.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=.9\linewidth]{./k1-k2-Ca-Cb.png}
-\caption{\label{fig-k1-k2-ca-cb}Contour plots of the relationships between \(k_1\) and \(k_2\) and a) \(F_A\) and b) \(F_B\).}
-\end{figure}
-
-It is evidently not enough to specify one of these values to uniquely specify the rate constants. In \(F_A\), there are near vertical isolines, and in \(F_B\) other isolines. For example, for \(k_1=2\), \(F_a\) will be between 0-0.02 for a broad range of \(k_2\) values, and which value of \(k_2\) that is chosen depends on the value of \(F_b\) that is observed. If you see low \(F_b\), \(k_2\) will be closer to 2, and if \(F_b\) is high, then \(k_2\) is closer to 0.2.
-
-For generative parameter estimation we can consider the joint probability distribution that encompasses the variables of interest, that is, \([k_1, k_2, F_A, F_B]\), and then condition the distribution on observed output concentrations to generate the set of parameters that are consistent that those observations. For illustrative purposes we estimate parameters for two scenarios at the reactor outlet:
-
-\begin{enumerate}
-\item A low molar flow of A with low molar flow of B, i.e. both reactions are fast.
-\item A low molar flow of A with high molar flow of B, i.e. reaction 1 is fast, and reaction 2 is slow.
-\end{enumerate}
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=.9\linewidth]{./parameter_estimation_comparison.png}
-\caption{\label{fig-parest}Estimating rate constants $(k_1, k_2)$ from reactor exit flows (F\_A, F\_B) using GMM and Flow Matching. Left panels show joint distributions in parameter space; right panels show marginal distributions. (a-b) Scenario 1 (\(F_A\) = 0.02, \(F_B\) = 0.05): Both reactions fast, requiring high \(k_1\) and \(k_2\). (c-d) Scenario 2 (\(F_A\) = 0.02, \(F_B\) = 0.65): First reaction fast, second slow, requiring high \(k_1\) and low \(k_2\). Both methods correctly identify the parameter regimes. GMM shows minor multimodality due to the non-unique inverse problem, while Flow Matching produces smoother distributions. Mean estimates (stars) accurately reproduce the target observations.}
-\end{figure}
-
-It is also possible to estimate an uncertainty of sorts. The distribution of the estimated rate constants is due to the surrogate models not fitting the data perfectly well, as seen in the parity plot. It is also possible to use this approach to map uncertainties in the inputs to the outputs and vice versa. For example, if one has the confidence intervals of a parameter they can map that range onto outputs with this approach. We illustrate this kind of mapping in Sec. \ref{mapping}, and previously showed an approach using inverse mapping concepts \cite{alves-2025-mappin-uncer}.
-
-\subsection{Mapping input and output spaces  \label{mapping}}
-
-We previously developed a mapping approach based on differential equations, path integration, and the implicit function theorem \cite{alves-2023}. We illustrate here that this can also be achieved by a generative model. The goal is to map a desired output space in the concentration of A, B from a CSTR to the input space of the radius of a CSTR, and the temperature (in units of \(RT\)) that achieves it. We have a design with fixed height, and we can modify the radius and temperature (via RT). There are two reactions: \(2A \rightarrow B\), which is second order in A, and \(B \rightarrow C\), which is first order in B. We seek a design space with desired amounts of A and B in the exit. We choose a circular region in the output space, and map it to the input space.
-
-Given a radius, we have \(V = \pi R^2 H\) and given an \(RT\) we have these rate constants for the two forward reactions: \(k_1 = \exp(-3 / RT)\), \(k_2 = \exp(-10 / RT)\).
-
-We start with a mole balance:
-\begin{equation}
-0 = F_{A0} - F_A + r_A V
-\end{equation}
-
-Some rearrangement leads to:
-\begin{equation}
-0 = V k_1 C_A^2 + (\nu_0 + V k_2) C_A - F_{A0}
-\end{equation}
-
-which we can solve with the quadratic equation to get \(C_A\) as a function of \((R, RT)\), and then from a mole balance on B, we get
-\begin{equation}
-C_B = k_1 C_A^2 V / \nu_0
-\end{equation}
-
-Thus, we can analytically map the input space to the output space as shown in Figure \ref{fig-mapping}. We do this by brute force sampling here and show how a circular region in the output space maps to the input space. We choose this example because it is easy to do this analytically, but this forward mapping can also be done in nonlinear programs.
-
-\begin{figure}[H]
-\centering
-\includegraphics[width=.9\linewidth]{./space_mapping_comparison.png}
-\caption{\label{fig-mapping}Mapping a desired concentration region (b, red circle: Ca = 0.58, Cb = 0.30 $\pm$ 0.08 mol/L) to feasible design parameters using (a) GMM and (c) Flow Matching. Both methods identify the irregular, non-convex region in (R, RT) space that produces the target concentrations. Background points show training data colored by distance from origin. The complex shape of the mapped region reveals the nonlinear relationship between reactor size, temperature, and exit concentrations, demonstrating that multiple design configurations can achieve the same production target. This inverse mapping capability is unique to generative models.}
-\end{figure}
-
-
-This is not the same as learning a forward or inverse model, e.g. a neural network or Gaussian process model. This is an approximate, data-driven mapping through a joint distribution model. It is not as smooth as the mapping by ODEs \cite{alves-2023}, or an analytical mapping, but it might be suitable for some applications, such as when sensor data is available but a mechanistic model is not fully developed or is computationally expensive to evaluate in the inverse mapping direction. Furthermore, building the generative model from more samples would improve the mapping accuracy. It is also possible to map in the forward direction, e.g. from a desired input space to an output space. This has applications in uncertainty propagation \cite{alves-2025-mappin-uncer}, for instance.
-
-There is a connection between the mapping of input and output spaces by differential equations we previously developed \cite{alves-2023} and the generative models we use here. Previously \cite{alves-2023} we used a differentiable model to derive a set of ODEs that connect the input and output spaces. We considered a point-wise mapping where one could use the ODEs to transform a single point in one space to the other space. In flow-mapping one uses machine learning to learn the vector field that defines the ODEs that transform the input distribution to the output distribution. Then, by sampling from one space it is possible to transform that sample into the other space. In this way, we might view these models as data-driven versions of the model-driven mapping idea we developed in our previous work \cite{alves-2023,alves-2025-mappin-uncer}.
 
 \subsection{Limitations of generative optimization}
 
@@ -617,27 +603,21 @@ The generative optimization approach fundamentally relies on the construction of
 
 Issues related to dimensionality also need to be addressed. We anticipate that with an increased number of dimensions, numerical instability, curse of dimensionality and training times could become larger problems that were not currently found in the extensive case studies. Furthermore, domain knowledge is still necessary regarding active constraint regions to properly handle inequalities, which is done naturally in mathematical programming formulations. Lastly, the hyperparameter tuning and model selection problems are still present, a reality of any machine learning formulation.
 
-
-
 We reiterate that although the idea proposed in this work is novel and has potential to be ubiquitously applied in science and engineering applications, more work needs to be done on edge cases regarding data availability, hyperparameter tuning and generative model selection, for instance.
 
 \section{Conclusions} \label{sec:conclusions}
 
-We have illustrated several examples of using generative models in optimization tasks that ranged from root finding, optimization, optimization with constraints, parameter estimation and state mapping. In each case the solution is obtained by conditional generation from a distribution trained from samples of inputs and outputs. In root-finding, the outputs are function values. In optimization, the outputs include derivatives. For constrained optimization, the outputs were derivatives of an augmented Lagrange function. In parameter estimation, we used observations for the outputs. The identification of the input / output pairs that allow one to generate conditional samples from specific values is the key to using generative models this way.
+We have illustrated several examples of using generative models in optimization tasks that ranged from root finding, optimization, optimization with constraints, parameter estimation and state mapping. In each case the solution is obtained by conditional generation from a distribution trained from samples of inputs and outputs. For root-finding, the outputs are function values. In optimization, the outputs include derivatives. For constrained optimization, the outputs were derivatives of an augmented Lagrange function. In parameter estimation, we used observations for the outputs. The identification of the input / output pairs that allow one to generate conditional samples from specific values is the key to using generative models this way.
 
 There are a few ways this generative approach could fail. First, if it is hard to model the underlying joint probability distribution, or learn the transformation the approach would obviously fail. Second, even if it succeeds, there is no guarantee one finds all the possible solutions, even of the surrogate function. The surrogate function may not have sufficient accuracy to find the true solutions of the real system, or may have artifacts that lead to false solutions. The models are built from data and the solutions are found by sampling. For well-behaved broad distributions, sampling should work very well. For poorly-behaved distributions, e.g. where there is a very sharp probability, it is possible to miss a result, both in building the model and sampling it for solutions.
 
-It is evident this is not a panacea solution to optimization. Conventional methods may be more efficient and accurate for some problems, especially when there is a model available. Even regular machine learned models with conventional methods may be better when they have desirable properties, e.g. converting a Rectified Linear Unit (ReLU) neural network to a mixed integer program. It remains unknown if we can find a way to fully include inequality constraints. Additionally, the whole approach resembles using a surrogate model, and is limited in the same ways: the solutions are to the surrogate model, and not the underlying true model. That is a feature when there is no actual model, but rather data. Sampling strategies can be essential to success, and there are not yet established methods to efficiently sample the data one needs. Since this is ultimately a data-driven approach, it is not likely to be accurate in sample generation with conditions that are out of distribution.
+It is evident this is not a panacea solution to optimization. Conventional methods may be more efficient and accurate for some problems, especially when there is a model available. Even regular machine learned models with conventional methods may be better when they have desirable properties, e.g. converting a Rectified Linear Unit (ReLU) neural network to a mixed integer program. It remains unknown if we can find a way to fully include inequality constraints; in this work we relied on an approximate barrier function. Fundamentally, the whole approach relies on a surrogate model, and is limited by that model: the solutions are to the surrogate model, and not the underlying true model. That is a feature when there is no actual model, but rather data. Sampling strategies can be essential to success, and there are not yet established methods to efficiently sample the data one needs. Since this is ultimately a data-driven approach, it is not likely to be accurate in sample generation with conditions that are out of distribution. As with other machine learning models, data-driven generative models should only be expected to be valid for ``in-domain'' sampling, but in high-dimensional spaces it is not always obvious how to quantify what is in or out of domain. Although one can use sampling to quantify variance in predictions, that variance is a combination of model inadequacy and noise in the data.
 
-Generative models currently do not have the same tools for analysis that regular models have. It is not obvious, for example, how one might define the derivatives of a generative model. In principle, the derivative would itself be a distribution. As with other machine learning models, data-driven generative models should only be expected to be valid for ``in-domain'' sampling, but in high-dimensional spaces it is not always obvious how to quantify what is in or out of domain. Although one can use sampling to quantify variance in predictions, that variance is a combination of model inadequacy and noise in the data.
-
-Nevertheless, this work shows that generative methods have enormous possibility in a broad range of applications we have not previously considered them for in optimization, as surrogate models, and likely others we have not thought of yet. There are many generative models in existence today, and new ones are still being found. It seems likely these will mitigate problems we have illustrated in this work, and make new approaches possible in the future. We are most excited by the new way of thinking about problems that this approach now enables.
+Nevertheless, this work shows that generative methods have interesting possibility in a broad range of applications we have not previously considered them for in optimization, as surrogate models, and likely others we have not thought of yet. There are many generative models in existence today, and new ones are still being found. It seems likely these will mitigate problems we have illustrated in this work, and make new approaches possible in the future. We are most excited by the new way of thinking about problems that this approach now enables.
 
 \section{Acknowledgments}
 
 JRK acknowledges Prof. Carl D. Laird for suggesting the barrier function approach for problems with inequality constraints.
-
-
 
 \section{Data Availability Statement}
 
@@ -646,7 +626,7 @@ As Supporting Information we provide a GitHub repository \url{https://github.com
 \bibliography{manuscript}
 
 \begin{tocentry}
-  \includegraphics[width=\textwidth]{toc.png}
+  \includegraphics[width=2.8in]{toc.png}
 \end{tocentry}
 
 \end{document}
