@@ -92,6 +92,34 @@ The repository is pre-configured for VS Code. After running `uv sync`:
 └── Results (results-*.ipynb):     # Publication figures comparing GMM and FM
 ```
 
+## Manuscript Figures
+
+Each figure in `manuscript.tex` is produced by exactly one notebook. Re-running the
+notebook below regenerates that figure in place.
+
+| Figure file | Authoritative notebook | Example |
+|---|---|---|
+| `fig_gmm_example.png` | `00-example_gmm_fm.ipynb` | GMM illustration |
+| `fig_fm_example.png` | `00-example_gmm_fm.ipynb` | Flow matching illustration |
+| `preos_comparison.png` | `results-00-root-finding-preos.ipynb` | PR-EOS root finding |
+| `optimization_comparison.png` | `results-01-optimization.ipynb` | Unconstrained optimization |
+| `blending_comparison.png` | `results-02-equality-constrained-blending.ipynb` | Gasoline blending (Lagrangian) |
+| `equilibrium_comparison.png` | `results-03-reaction-equilibrium.ipynb` | Reaction equilibrium (barrier method) |
+| `k1-k2-Ca-Cb.png` | `00e_parameter_estimation.ipynb` | Parameter estimation setup |
+| `parameter_estimation_comparison.png` | `results-04-parameter-estimation.ipynb` | Parameter estimation |
+| `space_mapping_comparison.png` | `results-05-space-mapping.ipynb` | CSTR design-space mapping |
+| `evaporator_training_coverage.png` | `evaporator_feasibility_data.ipynb` | Evaporator feasibility |
+| `evaporator_relative_error.png` | `evaporator_feasibility_data.ipynb` | Evaporator feasibility |
+| `evaporator_summary_comparison.png` | `evaporator_feasibility_data.ipynb` | Evaporator feasibility |
+| `optimization_flowchart.pdf` | *(hand-drawn, not notebook-generated)* | Method schematic |
+| `evaporator_schematic.pdf` | *(hand-drawn, not notebook-generated)* | Evaporator schematic |
+| `toc.png` | *(hand-assembled)* | Table-of-contents graphic |
+
+`results-and-figures.ipynb` is an earlier exploratory all-in-one notebook. It uses
+different problem setups from the manuscript (its equilibrium example is plain root
+finding rather than the barrier formulation), so it writes its figures with a
+`draft_` prefix and is not the source of any manuscript figure.
+
 ## Quick Start
 
 ```python
