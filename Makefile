@@ -83,21 +83,72 @@ readme:
 	@echo "Executing readme.ipynb..."
 	@$(JUPYTER_EXECUTE) readme.ipynb
 
+# ------------------------------------------------------------------
+# Manuscript figures
+#
+# Figures are discovered from \includegraphics{...} in manuscript.tex so
+# this list never goes stale when figures are added or removed.  It is
+# defined up here, ahead of every rule that uses it, because make expands
+# a rule's prerequisites at the moment the rule is read.
+# ------------------------------------------------------------------
+FIGURES = $(shell sed -n 's/.*\\includegraphics[^{]*{\([^}]*\)}.*/\1/p' manuscript.tex | sed 's|^\./||' | sort -u)
+
 # Build PDF from LaTeX
+#
+# The PDF depends on the bibliography and the figures as well as the tex,
+# so regenerating a figure or editing manuscript.bib triggers a rebuild.
 .PHONY: pdf
 pdf: manuscript.pdf
 
-manuscript.pdf: manuscript.tex
+manuscript.pdf: manuscript.tex manuscript.bib $(FIGURES)
 	@echo "Building PDF from manuscript.tex..."
 	latexmk -C manuscript.tex
 	latexmk -pdf manuscript.tex
 	@echo "PDF built successfully!"
+
+# ------------------------------------------------------------------
+# Package the manuscript source + figures for submission / sharing
+# ------------------------------------------------------------------
+ZIPNAME = manuscript-source.zip
+
+# manuscript.bbl is included so the recipient can build without running bibtex.
+TEX_SOURCES = manuscript.tex manuscript.bib manuscript.bbl
+
+ZIP_CONTENTS = $(TEX_SOURCES) $(FIGURES)
+
+# Rebuilt unconditionally: packaging is cheap and a stale archive is worse
+# than a redundant one.
+.PHONY: zip
+zip:
+	@missing=""; for f in $(ZIP_CONTENTS); do \
+	  [ -f "$$f" ] || missing="$$missing $$f"; \
+	done; \
+	if [ -n "$$missing" ]; then \
+	  echo "ERROR: missing required file(s):$$missing"; \
+	  echo "(manuscript.bbl is created by 'make pdf')"; \
+	  exit 1; \
+	fi
+	@rm -f $(ZIPNAME)
+	@zip -q $(ZIPNAME) $(ZIP_CONTENTS)
+	@echo "Created $(ZIPNAME) with $(words $(ZIP_CONTENTS)) files:"
+	@printf '  %s\n' $(ZIP_CONTENTS)
+
+# Verify the zip actually builds a PDF in a clean directory
+.PHONY: zip-check
+zip-check: zip
+	@tmp=$$(mktemp -d) && \
+	unzip -q $(ZIPNAME) -d "$$tmp" && \
+	(cd "$$tmp" && latexmk -pdf -interaction=nonstopmode manuscript.tex > build.log 2>&1) && \
+	echo "OK: $(ZIPNAME) builds manuscript.pdf standalone" || \
+	{ echo "FAILED: see $$tmp/build.log"; exit 1; }; \
+	rm -rf "$$tmp"
 
 # Clean checkpoint files
 .PHONY: clean
 clean:
 	@echo "Removing checkpoint files..."
 	@rm -rf .ipynb_checkpoints
+	@rm -f $(ZIPNAME)
 	@echo "Checkpoint files removed!"
 
 # List all notebooks
@@ -126,6 +177,8 @@ help:
 	@echo "  results   - Execute results notebooks (after GMM and FM)"
 	@echo "  readme    - Execute readme.ipynb"
 	@echo "  pdf       - Build PDF from manuscript.tex"
+	@echo "  zip       - Package tex, bib, bbl + figures into $(ZIPNAME)"
+	@echo "  zip-check - Verify the zip builds a PDF in a clean temp dir"
 	@echo "  list      - List all notebooks"
 	@echo "  clean     - Remove checkpoint files"
 	@echo "  help      - Show this help message"
