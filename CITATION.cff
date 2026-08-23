@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software and the paper."
+title: "Generative machine learning approaches to optimization: supporting code and examples"
+type: software
+authors:
+  - family-names: Alves
+    given-names: Victor
+    affiliation: "Department of Chemical Engineering, Carnegie Mellon University"
+    orcid: "https://orcid.org/0009-0006-5308-9717"
+  - family-names: Kitchin
+    given-names: "John R."
+    affiliation: "Department of Chemical Engineering, Carnegie Mellon University"
+    email: jkitchin@andrew.cmu.edu
+    orcid: "https://orcid.org/0000-0003-2625-9232"
+repository-code: "https://github.com/KitchinHUB/generative-optimization"
+license: MIT
+version: 1.0.0
+date-released: "2026-08-23"
+keywords:
+  - generative models
+  - optimization
+  - Gaussian mixture models
+  - flow matching
+  - inverse design
+preferred-citation:
+  type: article
+  title: "Generative machine learning approaches to optimization"
+  authors:
+    - family-names: Alves
+      given-names: Victor
+      orcid: "https://orcid.org/0009-0006-5308-9717"
+    - family-names: Kitchin
+      given-names: "John R."
+      orcid: "https://orcid.org/0000-0003-2625-9232"
+  doi: 10.26434/chemrxiv-2025-hk886
+  year: 2025

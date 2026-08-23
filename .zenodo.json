@@ -1,0 +1,35 @@
+{
+  "title": "Generative machine learning approaches to optimization: supporting code and examples",
+  "upload_type": "software",
+  "description": "<p>Supporting code, notebooks and figures for the paper <em>Generative machine learning approaches to optimization</em> by Victor Alves and John R. Kitchin.</p><p>The key idea is that generative models can learn the joint probability distribution of variables and their derivatives, or transform simple distributions to target distributions. By conditioning on desired properties (e.g., derivatives equal to zero), solutions are obtained by sampling. This is demonstrated with Gaussian mixture models, which approximate joint distributions, and conditional flow matching, which learns distribution transformations. Examples include root finding, unconstrained and constrained optimization, parameter estimation, and state mapping.</p><p>The repository contains the Jupyter notebooks that generate every figure in the paper, the manuscript source, and a uv lock file pinning the environment used to produce the published results.</p>",
+  "creators": [
+    {
+      "name": "Alves, Victor",
+      "affiliation": "Department of Chemical Engineering, Carnegie Mellon University, Pittsburgh, PA 15213, USA",
+      "orcid": "0009-0006-5308-9717"
+    },
+    {
+      "name": "Kitchin, John R.",
+      "affiliation": "Department of Chemical Engineering, Carnegie Mellon University, Pittsburgh, PA 15213, USA",
+      "orcid": "0000-0003-2625-9232"
+    }
+  ],
+  "license": "mit",
+  "access_right": "open",
+  "keywords": [
+    "generative models",
+    "optimization",
+    "Gaussian mixture models",
+    "flow matching",
+    "inverse design",
+    "chemical engineering",
+    "machine learning"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "10.26434/chemrxiv-2025-hk886",
+      "relation": "isSupplementTo",
+      "scheme": "doi"
+    }
+  ]
+}
