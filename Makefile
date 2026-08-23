@@ -15,13 +15,17 @@
 # Invoked as `python -m jupyter` rather than through .venv/bin/jupyter,
 # whose shebang still points at the path this project had before it was
 # moved into @archive/.  Run `uv sync` to rewrite those console scripts.
-JUPYTER = $(if $(wildcard .venv/bin/python),.venv/bin/python -m jupyter,jupyter)
+#
+# `jupyter nbconvert` dispatches by exec'ing a jupyter-nbconvert found on
+# PATH, which lands back outside this project.  `-m nbconvert` runs it in
+# this interpreter directly and skips that dispatch.
+PY = $(if $(wildcard .venv/bin/python),.venv/bin/python,python3)
 #
 # The notebooks record their kernel as "python3", which jupyter resolves to
 # the first python3 kernelspec on the search path -- currently an unrelated
 # venv without gmr.  KERNEL pins execution to this project's venv instead.
 KERNEL ?= genopt-venv
-JUPYTER_EXECUTE = $(JUPYTER) nbconvert --execute --to notebook --inplace \
+JUPYTER_EXECUTE = $(PY) -m nbconvert --execute --to notebook --inplace \
                   --ExecutePreprocessor.kernel_name=$(KERNEL)
 
 # GMM (00*) notebooks
