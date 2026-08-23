@@ -1,10 +1,29 @@
 # Generative Machine Learning Approaches to Optimization
 
+[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.22071548-blue.svg)](https://doi.org/10.5281/zenodo.22071548)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
 This repository contains supporting code and examples for the paper:
 
-> **Generative approaches to optimization**
+> **Generative machine learning approaches to optimization**
 > Victor Alves and John R. Kitchin
 > Preprint available at: https://chemrxiv.org/doi/full/10.26434/chemrxiv-2025-hk886
+
+## Citation
+
+This repository is archived on Zenodo. The DOI above is the concept DOI, which
+always resolves to the most recent release; cite it rather than a version DOI.
+
+```bibtex
+@misc{alves_kitchin_generative_optimization,
+  author = {Victor Alves and John R. Kitchin},
+  title  = {Generative machine learning approaches to optimization:
+            supporting code and examples},
+  year   = 2026,
+  doi    = {10.5281/zenodo.22071548},
+  url    = {https://doi.org/10.5281/zenodo.22071548}
+}
+```
 
 ## Overview
 
